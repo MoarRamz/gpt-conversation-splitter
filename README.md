@@ -219,6 +219,12 @@ A developer-only utility can compare a current export against `[INDEX]` entries 
 dotnet run --project tools/GPTConversationSplitter.ParityAudit -- <export.zip> <reference-activity-log.txt>
 ```
 
+## License
+
+GPT Conversation Splitter is **source-available software**, not open-source software. Official compiled releases may be downloaded and used for lawful personal, educational, professional, and internal business purposes. The source code is publicly available for transparency, inspection, security review, education, reference, and private evaluation, but redistribution, resale, and distribution of modified or derivative builds are not permitted without prior written permission from DevMoarRamz.
+
+See [`LICENSE.txt`](LICENSE.txt) for the complete terms.
+
 ## Repository workflow
 
 `main` is the stable release line:
