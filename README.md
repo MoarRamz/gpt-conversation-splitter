@@ -15,7 +15,7 @@ The source repository contains the C# solution, project files, synthetic tests, 
 
 ## Current release
 
-- **Version:** v2.2.0
+- **Version:** v2.2.1
 - **Platform:** Windows 10/11 x64
 - **Application:** C# / WPF on .NET 10
 - **Deployment:** self-contained six-file portable Windows folder; no installed .NET runtime required
