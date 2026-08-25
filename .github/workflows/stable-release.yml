@@ -1,0 +1,249 @@
+name: Stable Windows Release
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: stable-windows-release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-package:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.302'
+
+      - name: Verify deterministic SDK
+        shell: pwsh
+        run: |
+          $actual = (dotnet --version).Trim()
+          if ($actual -ne '10.0.302') { throw "Expected .NET SDK 10.0.302, got $actual" }
+          dotnet --info
+
+      - name: Enforce offline security architecture
+        shell: pwsh
+        run: ./tools/security/Assert-OfflineArchitecture.ps1
+
+      - name: Build core
+        run: dotnet build src/GPTConversationSplitter.Core/GPTConversationSplitter.Core.csproj -c Release
+
+      - name: Run established regression suite
+        run: dotnet run --project tests/GPTConversationSplitter.RegressionTests/GPTConversationSplitter.RegressionTests.csproj -c Release
+
+      - name: Run v2.2 regression suite
+        run: dotnet run --project tests/GPTConversationSplitter.V22Tests/GPTConversationSplitter.V22Tests.csproj -c Release
+
+      - name: Build WPF application
+        run: dotnet build src/GPTConversationSplitter.App/GPTConversationSplitter.App.csproj -c Release
+
+      - name: Publish stable portable build A
+        run: >-
+          dotnet publish src/GPTConversationSplitter.App/GPTConversationSplitter.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=false -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=false -p:PublishTrimmed=false -o artifacts/portable
+
+      - name: Publish stable portable build B
+        run: >-
+          dotnet publish src/GPTConversationSplitter.App/GPTConversationSplitter.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=false -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=false -p:PublishTrimmed=false -o artifacts/portable-repro
+
+      - name: Remove debug symbols
+        shell: pwsh
+        run: Get-ChildItem artifacts/portable,artifacts/portable-repro -Recurse -Filter *.pdb | Remove-Item -Force
+
+      - name: Verify portable release layout
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/reports | Out-Null
+          $expected = @(
+            'GPT Conversation Splitter.exe',
+            'D3DCompiler_47_cor3.dll',
+            'PenImc_cor3.dll',
+            'PresentationNative_cor3.dll',
+            'vcruntime140_cor3.dll',
+            'wpfgfx_cor3.dll'
+          )
+          $actual = @(Get-ChildItem artifacts/portable -File | Select-Object -ExpandProperty Name | Sort-Object)
+          $wanted = @($expected | Sort-Object)
+          if (($actual -join "`n") -ne ($wanted -join "`n")) {
+            throw "Portable deployment layout changed unexpectedly. Actual: $($actual -join ', ')"
+          }
+          @(
+            'Stable portable deployment layout'
+            ($actual | ForEach-Object { $item = Get-Item (Join-Path 'artifacts/portable' $_); "$($_)  $($item.Length) bytes" })
+          ) | Set-Content artifacts/reports/deployment-layout-report.txt
+
+      - name: Verify reproducible portable binaries
+        shell: pwsh
+        run: |
+          $a = Get-ChildItem artifacts/portable -File | Sort-Object Name
+          $b = Get-ChildItem artifacts/portable-repro -File | Sort-Object Name
+          if (($a.Name -join "`n") -ne ($b.Name -join "`n")) { throw 'Reproducible-build file lists differ.' }
+          $report = @('Reproducible portable build verification')
+          foreach ($file in $a) {
+            $other = Join-Path 'artifacts/portable-repro' $file.Name
+            $ha = (Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            $hb = (Get-FileHash $other -Algorithm SHA256).Hash.ToLowerInvariant()
+            $same = $ha -eq $hb
+            $report += "$($file.Name): $same  $ha"
+            if (-not $same) { throw "Portable binary is not reproducible: $($file.Name)" }
+          }
+          $report | Set-Content artifacts/reports/reproducible-build.txt
+
+      - name: Audit Windows PE mitigations
+        shell: pwsh
+        run: ./tools/security/Assert-PeMitigations.ps1 -Path 'artifacts/portable/GPT Conversation Splitter.exe' -ReportPath 'artifacts/reports/pe-mitigation-audit.txt'
+
+      - name: Require surviving usable main window
+        shell: pwsh
+        run: |
+          $process = $null
+          $watch = [Diagnostics.Stopwatch]::StartNew()
+          try {
+            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not reach an input-idle state within 5 seconds.' }
+            $watch.Stop()
+            Start-Sleep -Milliseconds 1500
+            $process.Refresh()
+            if ($process.HasExited) { throw "Application exited during startup survival window with code $($process.ExitCode)." }
+            if ($process.MainWindowHandle -eq 0) { throw 'Application survived but no usable main window handle was present.' }
+            if ([string]::IsNullOrWhiteSpace($process.MainWindowTitle) -or $process.MainWindowTitle -notlike 'GPT Conversation Splitter*') {
+              throw "Unexpected or missing main window title: '$($process.MainWindowTitle)'."
+            }
+            ('Stable startup to input-idle: {0:N0} ms' -f $watch.Elapsed.TotalMilliseconds) | Set-Content artifacts/reports/startup-performance.txt
+          }
+          finally {
+            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
+          }
+
+      - name: Audit runtime network endpoints
+        shell: pwsh
+        run: |
+          $process = $null
+          try {
+            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not become input-idle for network audit.' }
+            Start-Sleep -Milliseconds 500
+            $tcp = @(Get-NetTCPConnection -OwningProcess $process.Id -ErrorAction SilentlyContinue)
+            $udp = @(Get-NetUDPEndpoint -OwningProcess $process.Id -ErrorAction SilentlyContinue)
+            @(
+              'Runtime network endpoint audit'
+              "Owned TCP endpoints: $($tcp.Count)"
+              "Owned UDP endpoints: $($udp.Count)"
+            ) | Set-Content artifacts/reports/runtime-network-audit.txt
+            if ($tcp.Count -ne 0 -or $udp.Count -ne 0) { throw 'Portable application unexpectedly opened a network endpoint.' }
+          }
+          finally {
+            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
+          }
+
+      - name: Audit portable zero-residue user roots
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'gpt-splitter-stable-residue-audit'
+          Remove-Item $root -Recurse -Force -ErrorAction SilentlyContinue
+          $tempRoot = Join-Path $root 'Temp'
+          $appDataRoot = Join-Path $root 'AppData'
+          $localRoot = Join-Path $root 'LocalAppData'
+          $bundleRoot = Join-Path $root 'Bundle'
+          New-Item -ItemType Directory -Force $tempRoot,$appDataRoot,$localRoot,$bundleRoot | Out-Null
+          $old = @{ TEMP=$env:TEMP; TMP=$env:TMP; APPDATA=$env:APPDATA; LOCALAPPDATA=$env:LOCALAPPDATA; BUNDLE=$env:DOTNET_BUNDLE_EXTRACT_BASE_DIR }
+          $process = $null
+          try {
+            $env:TEMP=$tempRoot; $env:TMP=$tempRoot; $env:APPDATA=$appDataRoot; $env:LOCALAPPDATA=$localRoot; $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR=$bundleRoot
+            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not become input-idle for residue audit.' }
+            Start-Sleep -Milliseconds 750
+            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
+            Start-Sleep -Milliseconds 400
+            $tempCount = @(Get-ChildItem $tempRoot -Recurse -File -ErrorAction SilentlyContinue).Count
+            $appDataCount = @(Get-ChildItem $appDataRoot -Recurse -File -ErrorAction SilentlyContinue).Count
+            $localCount = @(Get-ChildItem $localRoot -Recurse -File -ErrorAction SilentlyContinue).Count
+            $bundleCount = @(Get-ChildItem $bundleRoot -Recurse -File -ErrorAction SilentlyContinue).Count
+            $files = @(Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue)
+            @(
+              'Stable portable controlled user-root residue audit'
+              "TEMP/TMP files after exit: $tempCount"
+              "APPDATA files after exit: $appDataCount"
+              "LOCALAPPDATA files after exit: $localCount"
+              "Bundle extraction files after exit: $bundleCount"
+              "Total controlled-root files after exit: $($files.Count)"
+            ) | Set-Content artifacts/reports/portable-residue-audit.txt
+            if ($files.Count -ne 0) { throw 'Portable application left files in controlled Windows user-data roots.' }
+          }
+          finally {
+            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
+            $env:TEMP=$old.TEMP; $env:TMP=$old.TMP; $env:APPDATA=$old.APPDATA; $env:LOCALAPPDATA=$old.LOCALAPPDATA; $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR=$old.BUNDLE
+            Remove-Item $root -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Stage stable portable folder
+        shell: pwsh
+        run: |
+          $release = 'artifacts/release/GPT Conversation Splitter'
+          New-Item -ItemType Directory -Force $release | Out-Null
+          Copy-Item artifacts/portable/* $release -Force
+
+      - name: Generate deployed-file SHA256SUMS
+        shell: pwsh
+        run: |
+          $release = 'artifacts/release/GPT Conversation Splitter'
+          Get-ChildItem $release -File | Sort-Object Name | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          } | Set-Content artifacts/reports/SHA256SUMS.txt
+
+      - name: Generate stable build provenance
+        shell: pwsh
+        run: |
+          $sdk=(dotnet --version).Trim()
+          @(
+            'GPT Conversation Splitter v2.2.0 stable build provenance'
+            "Commit: $env:GITHUB_SHA"
+            "Branch/ref: $env:GITHUB_REF"
+            'Runtime: win-x64'
+            'Configuration: Release'
+            'Portable managed compression: enabled'
+            ".NET SDK: $sdk"
+            'Offline architecture guard: PASS'
+            'Established regressions: PASS'
+            'v2.2 regressions: PASS'
+            'Portable six-file layout: PASS'
+            'Reproducible portable binaries: PASS'
+            'ASLR/DEP/HIGH_ENTROPY_VA: PASS'
+            'Startup survival: PASS'
+            'Runtime network endpoints: 0 TCP / 0 UDP'
+            'Controlled TEMP/APPDATA/LOCALAPPDATA residue: 0 files'
+            'Bundle extraction residue: 0 files'
+            ''
+            'Deployed-file SHA-256:'
+            (Get-Content artifacts/reports/SHA256SUMS.txt)
+          ) | Set-Content artifacts/reports/BUILD_PROVENANCE.txt
+
+      - name: Package Windows v2.2.0 stable
+        shell: pwsh
+        run: Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
+
+      - name: SHA-256 stable package report
+        shell: pwsh
+        run: |
+          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip -Algorithm SHA256
+          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
+          Get-Content artifacts/reports/PACKAGE_SHA256.txt
+
+      - name: Upload Windows v2.2.0 stable artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: GPT-Conversation-Splitter-v2.2.0-Stable
+          path: artifacts/GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip
+          if-no-files-found: error
+          compression-level: 0
