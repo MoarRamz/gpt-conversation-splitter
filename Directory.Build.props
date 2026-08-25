@@ -9,9 +9,9 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 
     <!-- Single source of truth for product identity and release metadata. -->
-    <Version>2.2.0</Version>
-    <FileVersion>2.2.0.0</FileVersion>
-    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <Version>2.2.1</Version>
+    <FileVersion>2.2.1.0</FileVersion>
+    <AssemblyVersion>2.2.1.0</AssemblyVersion>
     <Authors>DevMoarRamz</Authors>
     <Company>DevMoarRamz</Company>
     <Product>GPT Conversation Splitter</Product>
