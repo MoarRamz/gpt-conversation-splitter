@@ -214,6 +214,6 @@ public static class AppInfo
     public const string Developer = "DevMoarRamz";
     public static string Version { get; } = Assembly.GetExecutingAssembly().GetName().Version is { } version
         ? $"{version.Major}.{version.Minor}.{version.Build}"
-        : "2.1.0";
+        : "unknown";
     public static string DisplayName => $"{Name} {Version}";
 }
