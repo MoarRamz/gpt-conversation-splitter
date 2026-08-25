@@ -1,0 +1,68 @@
+name: Startup survival gate
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  startup-survival:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.302'
+
+      - name: Verify deterministic SDK
+        shell: pwsh
+        run: |
+          $actual = (dotnet --version).Trim()
+          if ($actual -ne '10.0.302') { throw "Expected .NET SDK 10.0.302, got $actual" }
+
+      - name: Publish portable application
+        run: >-
+          dotnet publish src/GPTConversationSplitter.App/GPTConversationSplitter.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=false -p:PublishReadyToRun=false -p:PublishTrimmed=false -o artifacts/startup-gate
+
+      - name: Require surviving usable main window
+        shell: pwsh
+        run: |
+          $process = $null
+          try {
+            $process = Start-Process -FilePath 'artifacts/startup-gate/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/startup-gate') -PassThru
+
+            if (-not $process.WaitForInputIdle(5000)) {
+              throw 'Application did not reach an input-idle state within 5 seconds.'
+            }
+
+            Start-Sleep -Milliseconds 1500
+            $process.Refresh()
+
+            if ($process.HasExited) {
+              throw "Application exited during startup survival window with code $($process.ExitCode)."
+            }
+
+            if ($process.MainWindowHandle -eq 0) {
+              throw 'Application process survived but no usable main window handle was present.'
+            }
+
+            if ([string]::IsNullOrWhiteSpace($process.MainWindowTitle) -or $process.MainWindowTitle -notlike 'GPT Conversation Splitter*') {
+              throw "Unexpected or missing main window title: '$($process.MainWindowTitle)'."
+            }
+
+            Write-Host "Startup survival PASS: PID $($process.Id), window '$($process.MainWindowTitle)', handle $($process.MainWindowHandle)."
+          }
+          finally {
+            if ($process -and -not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+          }
