@@ -207,7 +207,7 @@ jobs:
         run: |
           $sdk=(dotnet --version).Trim()
           @(
-            'GPT Conversation Splitter v2.2.0 stable build provenance'
+            'GPT Conversation Splitter v2.2.1 stable build provenance'
             "Commit: $env:GITHUB_SHA"
             "Branch/ref: $env:GITHUB_REF"
             'Runtime: win-x64'
@@ -229,21 +229,21 @@ jobs:
             (Get-Content artifacts/reports/SHA256SUMS.txt)
           ) | Set-Content artifacts/reports/BUILD_PROVENANCE.txt
 
-      - name: Package Windows v2.2.0 stable
+      - name: Package Windows v2.2.1 stable
         shell: pwsh
-        run: Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
+        run: Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
 
       - name: SHA-256 stable package report
         shell: pwsh
         run: |
-          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip -Algorithm SHA256
-          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
+          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip -Algorithm SHA256
+          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
           Get-Content artifacts/reports/PACKAGE_SHA256.txt
 
-      - name: Upload Windows v2.2.0 stable artifact
+      - name: Upload Windows v2.2.1 stable artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: GPT-Conversation-Splitter-v2.2.0-Stable
-          path: artifacts/GPT_Conversation_Splitter_v2.2.0_Windows_Portable_NoResidue.zip
+          name: GPT-Conversation-Splitter-v2.2.1-Stable
+          path: artifacts/GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip
           if-no-files-found: error
           compression-level: 0
