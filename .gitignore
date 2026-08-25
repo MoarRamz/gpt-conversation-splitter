@@ -1,0 +1,30 @@
+# ChatGPT exports / raw account data
+*.zip
+conversations.json
+conversations_*.json
+conversations-*.json
+chat.html
+user.json
+
+# GPT Conversation Splitter outputs
+*GPT Continuation*.md
+GPT_Conversation_Splitter_Activity_*.txt
+exports/
+
+# Diagnostics and temporary files
+*.log
+*.tmp
+.gpt-splitter-*.tmp
+startup_error.log
+operation_error.log
+
+# Private/local test material
+private/
+samples/private/
+test-data/private/
+
+# Windows / editor noise
+Thumbs.db
+Desktop.ini
+.vscode/
+.idea/

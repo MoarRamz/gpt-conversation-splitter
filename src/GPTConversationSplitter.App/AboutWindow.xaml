@@ -1,0 +1,84 @@
+<Window x:Class="GPTConversationSplitter.App.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About GPT Conversation Splitter"
+        Width="590"
+        SizeToContent="Height"
+        MinWidth="520"
+        MaxWidth="680"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        Background="{StaticResource WindowBackground}"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        AutomationProperties.Name="About GPT Conversation Splitter">
+    <Border Padding="24">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,20">
+                <TextBlock Text="GPT Conversation Splitter"
+                           FontSize="25"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"/>
+                <TextBlock x:Name="VersionText"
+                           Foreground="{StaticResource MutedBrush}"
+                           Margin="0,4,0,0"
+                           TextAlignment="Center"/>
+                <TextBlock Text="Developed by DevMoarRamz"
+                           Foreground="{StaticResource DisabledTextBrush}"
+                           FontSize="12"
+                           Margin="0,3,0,0"
+                           TextAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Margin="0,0,0,18">
+                <TextBlock Text="What is GPT Conversation Splitter?" FontSize="15" FontWeight="SemiBold"/>
+                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}">
+                    GPT Conversation Splitter is a local Windows utility designed to process official ChatGPT data exports and separate individual conversations into easy-to-use archival and continuation formats. It reconstructs the active conversation history, can create continuation-ready Markdown files for carrying prior context into a new ChatGPT conversation, and can preserve complete original conversation records as JSON.
+                </TextBlock>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Margin="0,0,0,18">
+                <TextBlock Text="Privacy by Design" FontSize="15" FontWeight="SemiBold"/>
+                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}">
+                    Processing is performed locally on your computer. The application does not use telemetry, make network requests, maintain a conversation database or cache, run background services, include an updater, or require an online account.
+                </TextBlock>
+            </StackPanel>
+
+            <StackPanel Grid.Row="3" Margin="0,0,0,18">
+                <TextBlock Text="Built With" FontSize="15" FontWeight="SemiBold"/>
+                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}">
+                    C# • .NET 10 • Windows Presentation Foundation (WPF) • System.Text.Json • Git • GitHub • GitHub Actions
+                </TextBlock>
+                <TextBlock Margin="0,5,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}">
+                    Development and engineering assistance provided with ChatGPT.
+                </TextBlock>
+            </StackPanel>
+
+            <StackPanel Grid.Row="4" Margin="0,0,0,22">
+                <TextBlock Text="Developer" FontSize="15" FontWeight="SemiBold"/>
+                <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}">
+                    GPT Conversation Splitter is developed and maintained by DevMoarRamz.
+                </TextBlock>
+            </StackPanel>
+
+            <Button Grid.Row="5"
+                    Content="Close"
+                    Width="92"
+                    HorizontalAlignment="Right"
+                    IsDefault="True"
+                    IsCancel="True"
+                    Click="CloseButton_Click"
+                    AutomationProperties.Name="Close About window"/>
+        </Grid>
+    </Border>
+</Window>

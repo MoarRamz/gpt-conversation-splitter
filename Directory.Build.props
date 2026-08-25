@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <!-- Single source of truth for product identity and release metadata. -->
+    <Version>2.2.0</Version>
+    <FileVersion>2.2.0.0</FileVersion>
+    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <Authors>DevMoarRamz</Authors>
+    <Company>DevMoarRamz</Company>
+    <Product>GPT Conversation Splitter</Product>
+    <Description>Local-first ChatGPT export archiving and continuation utility.</Description>
+    <Copyright>Copyright © 2026 DevMoarRamz</Copyright>
+    <RepositoryUrl>https://github.com/MoarRamz/gpt-conversation-splitter</RepositoryUrl>
+  </PropertyGroup>
+</Project>
