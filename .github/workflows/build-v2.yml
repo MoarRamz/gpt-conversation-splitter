@@ -205,7 +205,7 @@ jobs:
             $env:TEMP=$old.TEMP; $env:TMP=$old.TMP; $env:APPDATA=$old.APPDATA; $env:LOCALAPPDATA=$old.LOCALAPPDATA; $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR=$old.BUNDLE
             Remove-Item $root -Recurse -Force -ErrorAction SilentlyContinue
           }
-      - name: Stage portable RC2 folder
+      - name: Stage PR validation portable folder
         shell: pwsh
         run: |
           $release = 'artifacts/release/GPT Conversation Splitter'
@@ -225,7 +225,7 @@ jobs:
         run: |
           $sdk=(dotnet --version).Trim()
           @(
-            'GPT Conversation Splitter v2.2.0 RC2 build provenance'
+            'GPT Conversation Splitter PR validation build provenance'
             "Commit: $env:GITHUB_SHA"
             "Branch/ref: $env:GITHUB_REF"
             "Runtime: win-x64"
@@ -244,19 +244,19 @@ jobs:
             (Get-Content artifacts/reports/SHA256SUMS.txt)
           ) | Set-Content artifacts/reports/BUILD_PROVENANCE.txt
           Get-Content artifacts/reports/BUILD_PROVENANCE.txt
-      - name: Package Windows v2.2 RC2
+      - name: Package Windows PR validation
         shell: pwsh
-        run: Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
+        run: Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
       - name: SHA-256 package report
         shell: pwsh
         run: |
-          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip -Algorithm SHA256
+          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip -Algorithm SHA256
           $hash | Format-Table -AutoSize
-          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
-      - name: Upload Windows v2.2 RC2 artifact
+          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
+      - name: Upload Windows PR validation artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: GPT-Conversation-Splitter-v2.2.0-RC2
-          path: artifacts/GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip
+          name: GPT-Conversation-Splitter-PR-Validation
+          path: artifacts/GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip
           if-no-files-found: error
           compression-level: 0
