@@ -222,7 +222,7 @@ jobs:
         shell: pwsh
         run: |
           @(
-            'GPT Conversation Splitter v2.2.0 RC2 build provenance'
+            'GPT Conversation Splitter v2.2 optimization validation build provenance'
             "Commit: $env:GITHUB_SHA"
             "Branch/ref: $env:GITHUB_REF"
             'Runtime: win-x64'
@@ -244,25 +244,25 @@ jobs:
           ) | Set-Content artifacts/reports/BUILD_PROVENANCE.txt
           Get-Content artifacts/reports/BUILD_PROVENANCE.txt
 
-      - name: Package v2.2 RC2
+      - name: Package v2.2 optimization validation
         shell: pwsh
         run: |
           $release = 'artifacts/release/GPT Conversation Splitter'
           New-Item -ItemType Directory -Force $release | Out-Null
           Copy-Item artifacts/v22-compressed/* $release -Force
-          Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
+          Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_v2.2_Optimization_Validation_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
 
-      - name: Generate v2.2 RC2 package SHA-256
+      - name: Generate v2.2 optimization validation package SHA-256
         shell: pwsh
         run: |
-          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip -Algorithm SHA256
-          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
+          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_v2.2_Optimization_Validation_Windows_Portable_NoResidue.zip -Algorithm SHA256
+          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_v2.2_Optimization_Validation_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
           Get-Content artifacts/reports/PACKAGE_SHA256.txt
 
-      - name: Upload v2.2 RC2
+      - name: Upload v2.2 optimization validation
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: GPT-Conversation-Splitter-v2.2.0-RC2
-          path: artifacts/GPT_Conversation_Splitter_v2.2.0_RC2_Windows_Portable_NoResidue.zip
+          name: GPT-Conversation-Splitter-v2.2-Optimization-Validation
+          path: artifacts/GPT_Conversation_Splitter_v2.2_Optimization_Validation_Windows_Portable_NoResidue.zip
           if-no-files-found: error
           compression-level: 0

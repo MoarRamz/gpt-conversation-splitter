@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Maintenance
+
+- Corrected the public release ZIP filename used by the SmartScreen/hash-verification example in `SECURITY.md`.
+- Replaced the stale hard-coded application-version fallback with a version-neutral fallback; normal application builds continue to read the authoritative assembly version from `Directory.Build.props`.
+- Renamed pull-request and optimization validation artifacts/provenance so temporary CI packages no longer look like historical v2.2.0 RC2 release candidates.
+- No parser, transcript-reconstruction, export-format, bundle-integrity, persistence, networking, or released v2.2.1 binary behavior changes.
+
 ## 2.2.1 - 2026-08-25
 
 ### Public-readiness and privacy
