@@ -42,7 +42,7 @@ Do **not** disable SmartScreen globally to run this utility.
 For a downloaded release, verify the exact ZIP SHA-256 value published alongside that build before extracting or running it. For example:
 
 ```powershell
-Get-FileHash '.\GPT_Conversation_Splitter_v2.2.0_Windows_Portable.zip' -Algorithm SHA256
+Get-FileHash '.\GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip' -Algorithm SHA256
 ```
 
 The reported hash must exactly match the release value supplied for that package. If it does not match, do not run the file.

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.2.1 - 2026-08-25
+
+### Public-readiness and privacy
+
+- Established a sanitized public source baseline with no ancestry from the private engineering repository.
+- Removed private acceptance-corpus identifiers, measurements, local-path references, and nonessential personal biography from public-facing project material.
+- Kept application source, synthetic tests, security tooling, architecture documentation, and developer attribution required to understand and verify the program.
+- Updated Windows product metadata and About presentation for the public distribution baseline.
+- Adjusted public GitHub Actions workflows so validation remains available without publishing separate diagnostics artifacts.
+- Kept stable release packaging manual-only so public `main` changes cannot publish a release artifact automatically.
+
+### Behavior
+
+- No parser, transcript-reconstruction, export-format, bundle-integrity, or persistence behavior changes.
+- v2.2.0 remains the functional architecture baseline; v2.2.1 is the public-readiness patch release built from the sanitized public repository.
+
 ## 2.2.0 - 2026-08-25
 
 ### Streaming raw-record and export path
