@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -29,16 +29,16 @@ jobs:
           $actual = (dotnet --version).Trim()
           if ($actual -ne '10.0.302') { throw "Expected .NET SDK 10.0.302, got $actual" }
 
-      - name: Publish portable application
+      - name: Publish production-equivalent portable application
         run: >-
-          dotnet publish src/GPTConversationSplitter.App/GPTConversationSplitter.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=false -p:PublishReadyToRun=false -p:PublishTrimmed=false -o artifacts/startup-gate
+          dotnet publish src/GPTConversationSplitter.App/GPTConversationSplitter.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=false -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=false -p:PublishTrimmed=false -o artifacts/startup-gate
 
       - name: Require surviving usable main window
         shell: pwsh
         run: |
           $process = $null
           try {
-            $process = Start-Process -FilePath 'artifacts/startup-gate/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/startup-gate') -PassThru
+            $process = Start-Process -FilePath 'artifacts/startup-gate/LLM Continuity Toolkit.exe' -WorkingDirectory (Resolve-Path 'artifacts/startup-gate') -PassThru
 
             if (-not $process.WaitForInputIdle(5000)) {
               throw 'Application did not reach an input-idle state within 5 seconds.'
@@ -55,7 +55,7 @@ jobs:
               throw 'Application process survived but no usable main window handle was present.'
             }
 
-            if ([string]::IsNullOrWhiteSpace($process.MainWindowTitle) -or $process.MainWindowTitle -notlike 'GPT Conversation Splitter*') {
+            if ([string]::IsNullOrWhiteSpace($process.MainWindowTitle) -or $process.MainWindowTitle -notlike 'LLM Continuity Toolkit*') {
               throw "Unexpected or missing main window title: '$($process.MainWindowTitle)'."
             }
 
