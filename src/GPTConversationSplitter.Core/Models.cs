@@ -182,7 +182,7 @@ public sealed class BundleVerificationResult
 
 public sealed class BundleManifest
 {
-    [JsonPropertyName("format")] public string Format { get; init; } = "llm-continuity-toolkit-bundle-v1";
+    [JsonPropertyName("format")] public string Format { get; init; } = "gpt-conversation-splitter-bundle-v1";
     [JsonPropertyName("bundle_schema")] public int BundleSchema { get; init; } = 1;
     [JsonPropertyName("application")] public string Application { get; init; } = AppInfo.Name;
     [JsonPropertyName("application_version")] public string ApplicationVersion { get; init; } = AppInfo.Version;
