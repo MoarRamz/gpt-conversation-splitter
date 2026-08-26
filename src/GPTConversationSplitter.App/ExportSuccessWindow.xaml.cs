@@ -14,7 +14,7 @@ public partial class ExportSuccessWindow : Window
         _result = result;
         var continuation = result.Format == ExportFormat.GptContinuationMarkdown;
         Headline.Text = continuation
-            ? result.IsBundle ? "Your ChatGPT continuation archive is ready" : "Your ChatGPT continuation file is ready"
+            ? result.IsBundle ? "Your continuation archive is ready" : "Your Continuation Markdown file is ready"
             : result.IsBundle ? "Your export archive is ready" : "Export complete";
         Summary.Text = result.IsBundle
             ? $"{result.ConversationCount} conversation files were packaged successfully. {result.VerifiedCount} verified output(s)."
