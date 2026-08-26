@@ -6,7 +6,7 @@ namespace GPTConversationSplitter.Core;
 
 public static class ContinuationPrompt
 {
-    public const string SingleFile = "Continue exactly where we left off using the attached GPT Continuation Markdown file as historical context. Read its handoff metadata and continuation guidance first, then continue from the final historical turn. Preserve established decisions, terminology, constraints, preferences, and completed work. If a referenced attachment is missing and materially needed, tell me exactly which attachment you need rather than guessing.";
+    public const string SingleFile = "Continue exactly where we left off using the attached Continuation Markdown file as historical context. Read its handoff metadata and continuation guidance first, then continue from the final historical turn. Preserve established decisions, terminology, constraints, preferences, and completed work. If a referenced attachment is missing and materially needed, tell me exactly which attachment you need rather than guessing.";
 }
 
 public static class AttachmentManifest
@@ -78,7 +78,7 @@ public sealed class ContinuationWriter
         var attachmentManifest = AttachmentManifest.GetLines(row);
         var metadata = new Dictionary<string, object?>
         {
-            ["format"] = "gpt-conversation-continuation-v1",
+            ["format"] = "llm-continuity-continuation-v1",
             ["generated_by"] = AppInfo.DisplayName,
             ["title"] = row.Title,
             ["created"] = row.Created,
@@ -95,7 +95,7 @@ public sealed class ContinuationWriter
 
         var metadataJson = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
 
-        await writer.WriteLineAsync("# ChatGPT Conversation Continuation").ConfigureAwait(false);
+        await writer.WriteLineAsync("# LLM Conversation Continuation").ConfigureAwait(false);
         await writer.WriteLineAsync().ConfigureAwait(false);
         await writer.WriteLineAsync("> **Purpose:** This file preserves a prior ChatGPT conversation so a new ChatGPT conversation can continue from the same context.").ConfigureAwait(false);
         await writer.WriteLineAsync().ConfigureAwait(false);
@@ -150,7 +150,7 @@ public sealed class ContinuationWriter
             cancellationToken.ThrowIfCancellationRequested();
             var label = message.Role == "user" ? "User" : "Assistant";
             var turnId = message.Turn.ToString("D4", System.Globalization.CultureInfo.InvariantCulture);
-            await writer.WriteLineAsync($"<!-- GPT_SPLITTER_TURN {turnId} role={message.Role} -->").ConfigureAwait(false);
+            await writer.WriteLineAsync($"<!-- LLM_CONTINUITY_TURN {turnId} role={message.Role} -->").ConfigureAwait(false);
             await writer.WriteLineAsync($"## {label} — Turn {message.Turn}").ConfigureAwait(false);
             var stamp = TimestampUtil.FormatLocal(message.CreateTime);
             if (stamp != "Unknown")
@@ -161,7 +161,7 @@ public sealed class ContinuationWriter
             await writer.WriteLineAsync().ConfigureAwait(false);
             await writer.WriteLineAsync(message.Text).ConfigureAwait(false);
             await writer.WriteLineAsync().ConfigureAwait(false);
-            await writer.WriteLineAsync($"<!-- END_GPT_SPLITTER_TURN {turnId} -->").ConfigureAwait(false);
+            await writer.WriteLineAsync($"<!-- END_LLM_CONTINUITY_TURN {turnId} -->").ConfigureAwait(false);
             await writer.WriteLineAsync().ConfigureAwait(false);
             await writer.WriteLineAsync("---").ConfigureAwait(false);
             await writer.WriteLineAsync().ConfigureAwait(false);
@@ -175,11 +175,11 @@ public sealed class ContinuationWriter
 
 public sealed partial class ContinuationVerifier
 {
-    [GeneratedRegex(@"^<!-- GPT_SPLITTER_TURN (\d+) role=(user|assistant) -->$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^<!-- LLM_CONTINUITY_TURN (\d+) role=(user|assistant) -->$", RegexOptions.CultureInvariant)]
     private static partial Regex StartRegex();
     [GeneratedRegex(@"^## (User|Assistant) — Turn (\d+)$", RegexOptions.CultureInvariant)]
     private static partial Regex HeadingRegex();
-    [GeneratedRegex(@"^<!-- END_GPT_SPLITTER_TURN (\d+) -->$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^<!-- END_LLM_CONTINUITY_TURN (\d+) -->$", RegexOptions.CultureInvariant)]
     private static partial Regex EndRegex();
     [GeneratedRegex(@"^- Turn \d+ — \[(?:Uploaded image(?:: [^\]]+)?|Uploaded file: [^\]]+|Uploaded attachment reference|Audio attachment(?:: [^\]]+)?|Structured content: [^\]]+)\]$", RegexOptions.CultureInvariant)]
     private static partial Regex AttachmentRegex();
@@ -318,7 +318,7 @@ public sealed partial class ContinuationVerifier
             {
                 using var metadataDoc = JsonDocument.Parse(string.Join(Environment.NewLine, metadataLines));
                 var root = metadataDoc.RootElement;
-                metadataOk = GetString(root, "format") == "gpt-conversation-continuation-v1"
+                metadataOk = GetString(root, "format") == "llm-continuity-continuation-v1"
                     && GetString(root, "generated_by") == AppInfo.DisplayName
                     && GetString(root, "title") == row.Title
                     && GetString(root, "created") == row.Created
