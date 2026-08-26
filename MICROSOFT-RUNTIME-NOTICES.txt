@@ -2,24 +2,24 @@ Microsoft Runtime and Windows Component Notices
 
 LLM Continuity Toolkit is published as a self-contained Windows application and redistributes Microsoft .NET / WPF runtime components required to run the application without a separately installed .NET runtime.
 
-The release pipeline copies the authoritative license and third-party-notice files supplied with the pinned Windows .NET installation into each official portable package.
+The release pipeline copies the license and third-party-notice files supplied with the pinned Windows .NET installation into each official portable package and validates that the supplied Windows .NET license identifies the .NET Library License.
 
-Microsoft's .NET license information for Windows identifies the following distributed components as subject to the .NET Library License:
+Microsoft's current .NET license information for Windows identifies the following distributed components as subject to the .NET Library License:
 
 - .NET runtime components embedded in the single-file application executable
 - PresentationNative_cor3.dll
 - vcruntime140_cor3.dll
 - wpfgfx_cor3.dll
 
-Microsoft identifies D3DCompiler_47_cor3.dll as subject to the Windows SDK License. Microsoft documentation permits D3DCompiler_47.dll to be redistributed application-local with an application.
+Microsoft identifies D3DCompiler_47_cor3.dll as subject to the Windows SDK License. Current Microsoft deployment guidance states that D3DCompiler_47.dll may be included as a simple application-local file for non-Store applications.
 
-Other .NET binaries and files remain subject to the licenses and notices specified by Microsoft and their respective copyright holders.
+PenImc_cor3.dll and other .NET binaries/files not listed by Microsoft as Windows-specific exceptions remain subject to the licenses and notices identified by Microsoft and their respective copyright holders.
 
 Authoritative references:
 - .NET asset licensing model: https://github.com/dotnet/runtime/blob/main/docs/project/licensing-assets.md
 - .NET license information for Windows: https://github.com/dotnet/core/blob/main/license-information-windows.md
 - .NET Library License: https://dotnet.microsoft.com/en-us/dotnet_library_license.htm
 - Windows SDK License: https://learn.microsoft.com/legal/windows-sdk/license
-- D3DCompiler redistribution guidance: https://learn.microsoft.com/en-us/windows/win32/directx-sdk--august-2009-
+- Current Microsoft D3DCompiler deployment guidance: https://learn.microsoft.com/en-us/gaming/gdk/docs/features/common/packaging/packaging-framework-packages
 
-This notice is informational and does not replace or modify the applicable Microsoft license terms or third-party notices included with the official package.
+This notice is informational and does not replace, expand, or modify the applicable Microsoft license terms or third-party notices included with the official package.
