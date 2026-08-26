@@ -78,7 +78,7 @@ public sealed class ContinuationWriter
         var attachmentManifest = AttachmentManifest.GetLines(row);
         var metadata = new Dictionary<string, object?>
         {
-            ["format"] = "llm-continuity-continuation-v1",
+            ["format"] = "gpt-conversation-continuation-v1",
             ["generated_by"] = AppInfo.DisplayName,
             ["title"] = row.Title,
             ["created"] = row.Created,
@@ -318,7 +318,7 @@ public sealed partial class ContinuationVerifier
             {
                 using var metadataDoc = JsonDocument.Parse(string.Join(Environment.NewLine, metadataLines));
                 var root = metadataDoc.RootElement;
-                metadataOk = GetString(root, "format") == "llm-continuity-continuation-v1"
+                metadataOk = GetString(root, "format") == "gpt-conversation-continuation-v1"
                     && GetString(root, "generated_by") == AppInfo.DisplayName
                     && GetString(root, "title") == row.Title
                     && GetString(root, "created") == row.Created
