@@ -5,7 +5,7 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>Assets\GPT_Conversation_Splitter.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AssemblyName>GPT Conversation Splitter</AssemblyName>
+    <AssemblyName>LLM Continuity Toolkit</AssemblyName>
     <RootNamespace>GPTConversationSplitter.App</RootNamespace>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
