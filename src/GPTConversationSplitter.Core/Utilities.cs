@@ -148,7 +148,7 @@ public static class AtomicFile
             throw new InvalidOperationException("Output path has no parent directory.");
 
         Directory.CreateDirectory(directory);
-        var tempPath = Path.Combine(directory, $".gpt-splitter-{Guid.NewGuid():N}.tmp");
+        var tempPath = Path.Combine(directory, $".llm-continuity-{Guid.NewGuid():N}.tmp");
         try
         {
             await using (var file = new FileStream(
@@ -184,10 +184,54 @@ public static class AtomicFile
     }
 }
 
+public sealed record ActivitySensitiveSnapshot(
+    IReadOnlyList<string> Titles,
+    IReadOnlyList<string> Paths,
+    IReadOnlyList<string> Identifiers);
+
 public sealed class ActivitySink
 {
+    private readonly object _sensitiveGate = new();
+    private readonly HashSet<string> _sensitiveTitles = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _sensitivePaths = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _sensitiveIdentifiers = new(StringComparer.Ordinal);
+
     public event EventHandler<ActivityEvent>? Activity;
 
     public void Write(string category, string message, ActivityLevel level = ActivityLevel.Info)
         => Activity?.Invoke(this, new ActivityEvent(DateTimeOffset.Now, category, message, level));
+
+    public void RegisterTitle(string? value) => Register(_sensitiveTitles, value);
+    public void RegisterPath(string? value) => Register(_sensitivePaths, value);
+    public void RegisterIdentifier(string? value) => Register(_sensitiveIdentifiers, value);
+
+    public ActivitySensitiveSnapshot GetSensitiveSnapshot()
+    {
+        lock (_sensitiveGate)
+        {
+            return new ActivitySensitiveSnapshot(
+                _sensitiveTitles.OrderByDescending(static value => value.Length).ToArray(),
+                _sensitivePaths.OrderByDescending(static value => value.Length).ToArray(),
+                _sensitiveIdentifiers.OrderByDescending(static value => value.Length).ToArray());
+        }
+    }
+
+    public void ClearSensitiveValues()
+    {
+        lock (_sensitiveGate)
+        {
+            _sensitiveTitles.Clear();
+            _sensitivePaths.Clear();
+            _sensitiveIdentifiers.Clear();
+        }
+    }
+
+    private void Register(HashSet<string> target, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        lock (_sensitiveGate)
+            target.Add(value);
+    }
 }
