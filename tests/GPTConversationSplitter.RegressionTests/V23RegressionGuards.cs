@@ -26,7 +26,6 @@ internal static class V23RegressionGuards
             history.Add(entry);
         };
 
-        // The UI registers the chosen source path immediately, before indexing completes.
         sink.RegisterPath(sourcePath);
         sink.RegisterPath(sourceFile);
 
@@ -127,16 +126,20 @@ internal static class V23RegressionGuards
         Require(!string.IsNullOrWhiteSpace(dotnetRoot),
             "GitHub Actions could not locate the .NET root that exposes LICENSE.txt required by stable packaging.");
 
-        var files = Directory.EnumerateFiles(dotnetRoot!, "*", SearchOption.TopDirectoryOnly)
-            .Select(Path.GetFileName)
-            .Where(static name => !string.IsNullOrWhiteSpace(name))
-            .ToArray();
+        var licensePath = Directory.EnumerateFiles(dotnetRoot!, "*", SearchOption.TopDirectoryOnly)
+            .First(file => Path.GetFileName(file).Equals("LICENSE.txt", StringComparison.OrdinalIgnoreCase));
+        var noticesPath = Directory.EnumerateFiles(dotnetRoot!, "*", SearchOption.TopDirectoryOnly)
+            .FirstOrDefault(file => Path.GetFileName(file).Equals("ThirdPartyNotices.txt", StringComparison.OrdinalIgnoreCase)
+                || Path.GetFileName(file).Equals("THIRD-PARTY-NOTICES.TXT", StringComparison.OrdinalIgnoreCase));
 
-        Require(files.Any(static name => name!.Equals("LICENSE.txt", StringComparison.OrdinalIgnoreCase)),
-            $"Pinned Windows .NET installation under '{dotnetRoot}' does not expose LICENSE.txt required by stable packaging.");
-        Require(files.Any(static name => name!.Equals("ThirdPartyNotices.txt", StringComparison.OrdinalIgnoreCase)
-            || name.Equals("THIRD-PARTY-NOTICES.TXT", StringComparison.OrdinalIgnoreCase)),
+        Require(!string.IsNullOrWhiteSpace(noticesPath),
             $"Pinned Windows .NET installation under '{dotnetRoot}' does not expose ThirdPartyNotices required by stable packaging.");
+
+        var licenseText = File.ReadAllText(licensePath);
+        Require(licenseText.Contains(".NET LIBRARY", StringComparison.OrdinalIgnoreCase),
+            $"The Windows .NET LICENSE.txt under '{dotnetRoot}' did not identify the .NET Library License expected for Windows product distribution.");
+        Require(new FileInfo(noticesPath!).Length > 0,
+            "The Windows .NET ThirdPartyNotices file required by stable packaging was empty.");
     }
 
     private static ConversationRecord NewRecord(string id, string title, double created)
