@@ -46,7 +46,7 @@ public sealed class ExportService
         {
             var row = conversations[0];
             var finalPath = FileNameUtil.UniquePath(Path.Combine(destinationFolder, BuildOutputFileName(row, format)));
-            var stagingPath = Path.Combine(destinationFolder, $".gpt-splitter-{Guid.NewGuid():N}.stage");
+            var stagingPath = Path.Combine(destinationFolder, $".llm-continuity-{Guid.NewGuid():N}.stage");
             try
             {
                 var verification = await WriteSingleAsync(stagingPath, row, format, sourcePath, cancellationToken).ConfigureAwait(false);
@@ -95,7 +95,7 @@ public sealed class ExportService
         IProgress<ExportProgress>? progress,
         CancellationToken cancellationToken)
     {
-        var stagingRoot = Path.Combine(Path.GetTempPath(), $"gpt-splitter-{Guid.NewGuid():N}");
+        var stagingRoot = Path.Combine(Path.GetTempPath(), $"llm-continuity-{Guid.NewGuid():N}");
         Directory.CreateDirectory(stagingRoot);
         var manifestItems = new List<BundleManifestItem>(conversations.Count);
         var verifiedCount = 0;
@@ -203,10 +203,10 @@ public sealed class ExportService
                 new UTF8Encoding(false),
                 cancellationToken).ConfigureAwait(false);
 
-            var stem = format == ExportFormat.GptContinuationMarkdown ? "GPT_Continuation_Bundle" : "GPT_Conversation_Bundle";
+            var stem = format == ExportFormat.GptContinuationMarkdown ? "LLM_Continuity_Bundle" : "LLM_Conversation_Bundle";
             var finalName = $"{stem}_{generatedAt:yyyy-MM-dd_HHmmss}.zip";
             var finalPath = FileNameUtil.UniquePath(Path.Combine(destinationFolder, finalName));
-            var tempZip = Path.Combine(destinationFolder, $".gpt-splitter-{Guid.NewGuid():N}.tmp");
+            var tempZip = Path.Combine(destinationFolder, $".llm-continuity-{Guid.NewGuid():N}.tmp");
 
             _activity.Write("BUNDLE", $"Packaging {conversations.Count} verified conversation file(s).");
             try
@@ -320,7 +320,7 @@ public sealed class ExportService
 
     private static string BuildOutputFileName(ConversationRecord row, ExportFormat format)
     {
-        var suffix = format == ExportFormat.GptContinuationMarkdown ? " - GPT Continuation" : string.Empty;
+        var suffix = format == ExportFormat.GptContinuationMarkdown ? " - Continuation" : string.Empty;
         var stem = FileNameUtil.SafeFileName($"{TimestampUtil.DatePrefix(row.CreateTimeRaw)} - {row.Title}{suffix}");
         var extension = format switch
         {
@@ -335,7 +335,7 @@ public sealed class ExportService
 
     private static string FormatLabel(ExportFormat format) => format switch
     {
-        ExportFormat.GptContinuationMarkdown => "GPT Continuation Markdown (.md) — Recommended",
+        ExportFormat.GptContinuationMarkdown => "Continuation Markdown (.md) — Recommended",
         ExportFormat.Markdown => "Markdown (.md)",
         ExportFormat.Html => "HTML (.html)",
         ExportFormat.PlainText => "Plain text (.txt)",

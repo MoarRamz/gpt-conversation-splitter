@@ -6,15 +6,31 @@ conversations-*.json
 chat.html
 user.json
 
-# GPT Conversation Splitter outputs
+# LLM Continuity Toolkit outputs
+*Continuation*.md
+LLM_Continuity_Toolkit_Activity_*.txt
+LLM_Continuity_Toolkit_Redacted_Activity_*.txt
+# Legacy pre-v2.3 output names remain ignored for local compatibility.
 *GPT Continuation*.md
 GPT_Conversation_Splitter_Activity_*.txt
 exports/
 
+# .NET build / test output
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+*.pdb
+*.exe
+*.dll
+
 # Diagnostics and temporary files
 *.log
 *.tmp
+.llm-continuity-*.tmp
+.llm-continuity-*.stage
 .gpt-splitter-*.tmp
+.gpt-splitter-*.stage
 startup_error.log
 operation_error.log
 
@@ -26,5 +42,6 @@ test-data/private/
 # Windows / editor noise
 Thumbs.db
 Desktop.ini
+.vs/
 .vscode/
 .idea/

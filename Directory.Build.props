@@ -9,14 +9,14 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 
     <!-- Single source of truth for product identity and release metadata. -->
-    <Version>2.2.1</Version>
-    <FileVersion>2.2.1.0</FileVersion>
-    <AssemblyVersion>2.2.1.0</AssemblyVersion>
+    <Version>2.3.0</Version>
+    <FileVersion>2.3.0.0</FileVersion>
+    <AssemblyVersion>2.3.0.0</AssemblyVersion>
     <Authors>DevMoarRamz</Authors>
     <Company>DevMoarRamz</Company>
-    <Product>GPT Conversation Splitter</Product>
-    <Description>Local-first ChatGPT export archiving and continuation utility.</Description>
+    <Product>LLM Continuity Toolkit</Product>
+    <Description>Local-first conversation reconstruction, archival, and continuation utility for official ChatGPT data exports.</Description>
     <Copyright>Copyright © 2026 DevMoarRamz</Copyright>
-    <RepositoryUrl>https://github.com/MoarRamz/gpt-conversation-splitter</RepositoryUrl>
+    <RepositoryUrl>https://github.com/MoarRamz/llm-continuity-toolkit</RepositoryUrl>
   </PropertyGroup>
 </Project>

@@ -6,7 +6,7 @@ namespace GPTConversationSplitter.Core;
 
 public static class ContinuationPrompt
 {
-    public const string SingleFile = "Continue exactly where we left off using the attached GPT Continuation Markdown file as historical context. Read its handoff metadata and continuation guidance first, then continue from the final historical turn. Preserve established decisions, terminology, constraints, preferences, and completed work. If a referenced attachment is missing and materially needed, tell me exactly which attachment you need rather than guessing.";
+    public const string SingleFile = "Continue exactly where we left off using the attached Continuation Markdown file as historical context. Read its handoff metadata and continuation guidance first, then continue from the final historical turn. Preserve established decisions, terminology, constraints, preferences, and completed work. If a referenced attachment is missing and materially needed, tell me exactly which attachment you need rather than guessing.";
 }
 
 public static class AttachmentManifest

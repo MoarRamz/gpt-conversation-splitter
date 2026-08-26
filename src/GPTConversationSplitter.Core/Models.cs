@@ -210,7 +210,7 @@ public sealed class BundleManifestItem
 
 public static class AppInfo
 {
-    public const string Name = "GPT Conversation Splitter";
+    public const string Name = "LLM Continuity Toolkit";
     public const string Developer = "DevMoarRamz";
     public static string Version { get; } = Assembly.GetExecutingAssembly().GetName().Version is { } version
         ? $"{version.Major}.{version.Minor}.{version.Build}"

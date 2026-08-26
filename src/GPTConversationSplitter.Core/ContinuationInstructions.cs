@@ -11,7 +11,7 @@ public static class ContinuationInstructions
         if (conversationCount < 2)
             throw new ArgumentOutOfRangeException(nameof(conversationCount), "Bundle instructions require at least two conversations.");
 
-        return $"Continue using the attached GPT Continuation ZIP archive as historical context. It contains {conversationCount} GPT Continuation Markdown files. {BundleTail}";
+        return $"Continue using the attached Continuation ZIP archive as historical context. It contains {conversationCount} Continuation Markdown files. {BundleTail}";
     }
 
     public static string BuildBundleReadMe(int conversationCount, DateTimeOffset generatedAt)

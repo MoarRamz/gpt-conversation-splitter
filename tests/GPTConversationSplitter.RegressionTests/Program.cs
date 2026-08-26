@@ -165,7 +165,7 @@ async Task TestBundleAsync()
     Assert(result.VerifiedCount == 2, "Both continuation files should verify.");
     var prompt = result.ContinuationPrompt ?? throw new Exception("Bundle continuation prompt was null.");
     Assert(prompt == ContinuationInstructions.ForBundle(2), "Bundle prompt mismatch.");
-    Assert(prompt.Contains("2 GPT Continuation Markdown files", StringComparison.Ordinal), "Bundle prompt did not include the exact file count.");
+    Assert(prompt.Contains("2 Continuation Markdown files", StringComparison.Ordinal), "Bundle prompt did not include the exact file count and current format name.");
     Assert(File.Exists(result.OutputPath), "Bundle ZIP was not created.");
 
     using var archive = ZipFile.OpenRead(result.OutputPath);

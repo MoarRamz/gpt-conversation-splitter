@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Setup pinned .NET SDK
@@ -64,12 +64,12 @@ jobs:
             ($portable | ForEach-Object { "  $($_.Name)  $($_.Length) bytes" })
           ) | Set-Content artifacts/reports/deployment-layout-report.txt
           Get-Content artifacts/reports/deployment-layout-report.txt
-      - name: Verify portable release layout
+      - name: Verify portable runtime layout
         shell: pwsh
         run: |
           $files = @(Get-ChildItem artifacts/portable -File)
           $expected = @(
-            'GPT Conversation Splitter.exe',
+            'LLM Continuity Toolkit.exe',
             'D3DCompiler_47_cor3.dll',
             'PenImc_cor3.dll',
             'PresentationNative_cor3.dll',
@@ -100,14 +100,14 @@ jobs:
           $report | ForEach-Object { Write-Host $_ }
       - name: Audit Windows PE mitigations
         shell: pwsh
-        run: ./tools/security/Assert-PeMitigations.ps1 -Path 'artifacts/portable/GPT Conversation Splitter.exe' -ReportPath 'artifacts/reports/pe-mitigation-audit.txt'
+        run: ./tools/security/Assert-PeMitigations.ps1 -Path 'artifacts/portable/LLM Continuity Toolkit.exe' -ReportPath 'artifacts/reports/pe-mitigation-audit.txt'
       - name: Measure portable startup
         shell: pwsh
         run: |
           $process = $null
           $watch = [Diagnostics.Stopwatch]::StartNew()
           try {
-            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            $process = Start-Process -FilePath 'artifacts/portable/LLM Continuity Toolkit.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
             if (-not $process.WaitForInputIdle(5000)) { throw 'Portable application did not reach an input-idle UI state within 5 seconds.' }
             $watch.Stop()
             $line = 'Portable startup to input-idle: {0:N0} ms' -f $watch.Elapsed.TotalMilliseconds
@@ -122,7 +122,7 @@ jobs:
         run: |
           $process = $null
           try {
-            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            $process = Start-Process -FilePath 'artifacts/portable/LLM Continuity Toolkit.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
             if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not become input-idle for network audit.' }
             Start-Sleep -Milliseconds 500
             $tcp = @(Get-NetTCPConnection -OwningProcess $process.Id -ErrorAction SilentlyContinue)
@@ -142,14 +142,14 @@ jobs:
       - name: Audit one-EXE runtime extraction
         shell: pwsh
         run: |
-          $extractRoot = Join-Path $env:RUNNER_TEMP 'gpt-splitter-single-exe-audit'
+          $extractRoot = Join-Path $env:RUNNER_TEMP 'llm-continuity-single-exe-audit'
           Remove-Item $extractRoot -Recurse -Force -ErrorAction SilentlyContinue
           New-Item -ItemType Directory -Force $extractRoot | Out-Null
           $oldExtract = $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR
           $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR = $extractRoot
           $process = $null
           try {
-            $process = Start-Process -FilePath 'artifacts/single-exe/GPT Conversation Splitter.exe' -PassThru
+            $process = Start-Process -FilePath 'artifacts/single-exe/LLM Continuity Toolkit.exe' -PassThru
             Start-Sleep -Milliseconds 1800
             $during = @(Get-ChildItem $extractRoot -Recurse -File -ErrorAction SilentlyContinue)
             if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
@@ -170,7 +170,7 @@ jobs:
       - name: Audit portable zero-residue user roots
         shell: pwsh
         run: |
-          $root = Join-Path $env:RUNNER_TEMP 'gpt-splitter-residue-audit'
+          $root = Join-Path $env:RUNNER_TEMP 'llm-continuity-residue-audit'
           Remove-Item $root -Recurse -Force -ErrorAction SilentlyContinue
           $tempRoot = Join-Path $root 'Temp'
           $appDataRoot = Join-Path $root 'AppData'
@@ -183,7 +183,7 @@ jobs:
           $process = $null
           try {
             $env:TEMP=$tempRoot; $env:TMP=$tempRoot; $env:APPDATA=$appDataRoot; $env:LOCALAPPDATA=$localRoot; $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR=$bundleRoot
-            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            $process = Start-Process -FilePath 'artifacts/portable/LLM Continuity Toolkit.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
             if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not become input-idle for residue audit.' }
             Start-Sleep -Milliseconds 750
             if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
@@ -208,13 +208,13 @@ jobs:
       - name: Stage PR validation portable folder
         shell: pwsh
         run: |
-          $release = 'artifacts/release/GPT Conversation Splitter'
+          $release = 'artifacts/release/LLM Continuity Toolkit'
           New-Item -ItemType Directory -Force $release | Out-Null
           Copy-Item artifacts/portable/* $release -Force
       - name: Generate deployed-file SHA256SUMS
         shell: pwsh
         run: |
-          $release = 'artifacts/release/GPT Conversation Splitter'
+          $release = 'artifacts/release/LLM Continuity Toolkit'
           Get-ChildItem $release -File | Sort-Object Name | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $($_.Name)"
@@ -225,7 +225,7 @@ jobs:
         run: |
           $sdk=(dotnet --version).Trim()
           @(
-            'GPT Conversation Splitter PR validation build provenance'
+            'LLM Continuity Toolkit PR validation build provenance'
             "Commit: $env:GITHUB_SHA"
             "Branch/ref: $env:GITHUB_REF"
             "Runtime: win-x64"
@@ -233,7 +233,7 @@ jobs:
             'Portable managed compression: enabled'
             ".NET SDK: $sdk"
             'Offline architecture guard: PASS'
-            'Portable six-file layout: PASS'
+            'Portable six-runtime-binary layout: PASS'
             'Reproducible portable binaries: PASS'
             'ASLR/DEP/HIGH_ENTROPY_VA: PASS'
             'Runtime network endpoints: 0 TCP / 0 UDP'
@@ -246,17 +246,17 @@ jobs:
           Get-Content artifacts/reports/BUILD_PROVENANCE.txt
       - name: Package Windows PR validation
         shell: pwsh
-        run: Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
+        run: Compress-Archive -Path 'artifacts/release/LLM Continuity Toolkit' -DestinationPath artifacts/LLM_Continuity_Toolkit_PR_Validation_Windows_Portable.zip -CompressionLevel Optimal
       - name: SHA-256 package report
         shell: pwsh
         run: |
-          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip -Algorithm SHA256
+          $hash = Get-FileHash artifacts/LLM_Continuity_Toolkit_PR_Validation_Windows_Portable.zip -Algorithm SHA256
           $hash | Format-Table -AutoSize
-          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
+          "$($hash.Hash.ToLowerInvariant())  LLM_Continuity_Toolkit_PR_Validation_Windows_Portable.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
       - name: Upload Windows PR validation artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: GPT-Conversation-Splitter-PR-Validation
-          path: artifacts/GPT_Conversation_Splitter_PR_Validation_Windows_Portable_NoResidue.zip
+          name: LLM-Continuity-Toolkit-PR-Validation
+          path: artifacts/LLM_Continuity_Toolkit_PR_Validation_Windows_Portable.zip
           if-no-files-found: error
           compression-level: 0

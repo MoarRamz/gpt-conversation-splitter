@@ -4,7 +4,7 @@ using GPTConversationSplitter.Core;
 if (args.Length != 2)
 {
     Console.Error.WriteLine("Usage: GPTConversationSplitter.ParityAudit <current-export.zip|json> <reference-activity-log.txt>");
-    Console.Error.WriteLine("The reference log should be from a known-good GPT Conversation Splitter run and is never uploaded by this tool.");
+    Console.Error.WriteLine("The reference log should be from a known-good LLM Continuity Toolkit run or a compatible legacy GPT Conversation Splitter run and is never uploaded by this tool.");
     return 2;
 }
 

@@ -1,28 +1,33 @@
-# GPT Conversation Splitter
+# LLM Continuity Toolkit
 
 **Developed by DevMoarRamz**
 
-Local-first Windows utility for extracting individual conversations from an official ChatGPT data export and producing archival or continuation-ready files.
+A local-first Windows utility for reconstructing, preserving, archiving, and continuing conversations from official ChatGPT data exports.
+
+> [!NOTE]
+> **LLM Continuity Toolkit currently supports official ChatGPT data exports.** The LLM name describes the problem domain; it does not imply current import support for every LLM or AI service.
 
 ## Downloading and running the application
 
 > [!IMPORTANT]
 > **GitHub's Code → Download ZIP downloads the source-code repository. It is not the runnable Windows application.**
 >
-> To run GPT Conversation Splitter, download the compiled **Windows Portable** package from the project's GitHub Release, extract it, and launch **`GPT Conversation Splitter.exe`**. Keep the EXE and its five native WPF DLLs together in the same folder.
+> To run LLM Continuity Toolkit, download the compiled **Windows Portable** package from the project's GitHub Release, extract it, and launch **`LLM Continuity Toolkit.exe`**. Keep the EXE and its five native WPF runtime DLLs together in the same folder.
 
 The source repository contains the C# solution, project files, synthetic tests, build tooling, security checks, documentation, and GitHub Actions workflows. It intentionally does not contain a prebuilt EXE in the repository tree.
 
-## Current release
+## Current release line
 
-- **Version:** v2.2.1
+- **Version:** v2.3.0
 - **Platform:** Windows 10/11 x64
 - **Application:** C# / WPF on .NET 10
-- **Deployment:** self-contained six-file portable Windows folder; no installed .NET runtime required
+- **Deployment:** self-contained portable Windows application; no separately installed .NET runtime required
+
+Version 2.3.0 establishes the **LLM Continuity Toolkit** product identity and supersedes the former **GPT Conversation Splitter** name. Historical v2.2.1 source, tags, hashes, and release provenance remain unchanged.
 
 ## Purpose
 
-GPT Conversation Splitter processes official ChatGPT export data locally and can:
+LLM Continuity Toolkit processes official ChatGPT export data locally and can:
 
 - separate individual conversations for archival use;
 - reconstruct the active `current_node` conversation path;
@@ -30,39 +35,42 @@ GPT Conversation Splitter processes official ChatGPT export data locally and can
 - preserve complete original conversation records as JSON;
 - package multiple selected conversations into verified ZIP bundles.
 
-The recommended handoff format is **GPT Continuation Markdown**. Multi-conversation continuation exports include the individual payloads, `00 - READ ME FIRST - Continuation Instructions.txt`, and `bundle-manifest.json`.
+The recommended handoff format is **Continuation Markdown**. Multi-conversation continuation exports include the individual payloads, `00 - READ ME FIRST - Continuation Instructions.txt`, and `bundle-manifest.json`.
 
 ## Privacy and resource philosophy
 
-- Local processing only.
+- Local conversation processing only.
 - No application network requests.
-- No telemetry or API key.
+- No application telemetry, analytics, or API key.
 - No persistent conversation cache or database.
 - No background service, updater, tray process, or startup task.
 - No administrator privileges required.
 - Activity Log data is memory-only unless explicitly saved.
-- **Save Redacted...** pseudonymizes conversation titles and local filesystem paths for safer troubleshooting.
+- **Save Redacted...** pseudonymizes conversation titles, conversation identifiers, and local filesystem values for safer troubleshooting, including diagnostics retained from failed imports.
 - Real exports, transcripts, generated bundles, and private logs are excluded from the repository.
 
 The application is intentionally portable and stateless. It does not remember recent files, export folders, preferences, or other user state between runs.
 
+Windows or .NET runtime crash reporting, if enabled at the operating-system level, is controlled by Windows and is not application telemetry implemented by LLM Continuity Toolkit.
+
 ## Portable Windows package
 
-The production package contains one managed-compressed EXE plus five native WPF runtime libraries:
+The runtime deployment consists of one managed-compressed EXE plus five native WPF runtime libraries:
 
 ```text
-GPT Conversation Splitter/
-├── GPT Conversation Splitter.exe
-├── D3DCompiler_47_cor3.dll
-├── PenImc_cor3.dll
-├── PresentationNative_cor3.dll
-├── vcruntime140_cor3.dll
-└── wpfgfx_cor3.dll
+LLM Continuity Toolkit.exe
+D3DCompiler_47_cor3.dll
+PenImc_cor3.dll
+PresentationNative_cor3.dll
+vcruntime140_cor3.dll
+wpfgfx_cor3.dll
 ```
 
-Managed single-file compression reduces the deployed footprint while preserving the no-residue architecture. A true one-EXE WPF deployment is intentionally not used because .NET/WPF extracts native runtime files into the bundle cache.
+Official release packages also contain project and Microsoft/.NET legal-notice files. Those notice files are documentation; the executable runtime layout remains the six binaries above.
 
-The six-file portable layout is release-gated for zero application-created residue in controlled `TEMP`, `TMP`, `APPDATA`, `LOCALAPPDATA`, and .NET bundle-extraction roots.
+Managed single-file compression reduces the deployed runtime footprint while preserving the no-residue architecture. A true one-EXE WPF deployment is intentionally not used because .NET/WPF extracts native runtime files into the bundle cache.
+
+The six-runtime-binary layout is release-gated for zero application-created residue in controlled `TEMP`, `TMP`, `APPDATA`, `LOCALAPPDATA`, and .NET bundle-extraction roots.
 
 ## Architecture
 
@@ -114,13 +122,15 @@ Both are produced incrementally. Readable hydration recalculates and verifies th
 
 ### Continuation handoff integrity
 
-GPT Continuation Markdown includes deterministic turn framing, handoff metadata, continuation guidance, a historical attachment-reference manifest, and one final continuation endpoint.
+Continuation Markdown includes deterministic turn framing, handoff metadata, continuation guidance, a historical attachment-reference manifest, and one final continuation endpoint.
 
-Verification is section/state aware. Historical transcript text that resembles splitter turn markers, attachment-manifest lines, headings, or endpoint text is treated as historical content rather than generated framing. Single-file continuation exports are staged and only moved to their final destination after verification succeeds.
+The internal `GPT_SPLITTER_TURN` framing identifier is retained as a stable legacy file-format protocol marker; it is not the product name. Verification is section/state aware, so historical transcript text that resembles framing markers, attachment-manifest lines, headings, or endpoint text is treated as historical content rather than generated structure.
+
+Single-file continuation exports are staged and only moved to their final destination after verification succeeds.
 
 ### Future-schema safety
 
-Known internal ChatGPT content is excluded and known visible content is rendered normally. Unknown active/visible structured content fails closed for Markdown, HTML, text, and GPT Continuation export rather than silently producing incomplete history. Complete Conversation JSON remains available because it preserves the raw record without interpreting unsupported content.
+Known internal ChatGPT content is excluded and known visible content is rendered normally. Unknown active/visible structured content fails closed for Markdown, HTML, text, and Continuation Markdown export rather than silently producing incomplete history. Complete Conversation JSON remains available because it preserves the raw record without interpreting unsupported content.
 
 Duplicate stable ChatGPT conversation IDs cause import to fail rather than allowing ambiguous hydration.
 
@@ -134,7 +144,7 @@ The desktop application includes:
 - native dark WPF presentation;
 - keyboard-focusable native controls and accessibility/automation names on primary actions;
 - polite accessibility notification for changing status text;
-- an **About** dialog describing the application's purpose, privacy model, technology stack, and developer attribution;
+- an **About** dialog describing the application's purpose, privacy model, technology stack, developer attribution, and independent status;
 - version text sourced from assembly product metadata.
 
 ## Security and release hardening
@@ -150,9 +160,10 @@ The release gates include:
 - runtime audit requiring **0 owned TCP and 0 owned UDP endpoints**;
 - Windows PE checks requiring ASLR, DEP/NX, and high-entropy VA;
 - controlled-root zero-residue runtime audit;
-- two independent portable publishes whose deployed binaries must hash identically;
+- two independent portable publishes whose deployed runtime binaries must hash identically;
 - per-file `SHA256SUMS.txt`, package SHA-256, and build provenance;
-- startup-to-input-idle measurement and startup-survival validation.
+- startup-to-input-idle measurement and startup-survival validation using the production-equivalent managed-compressed publish configuration;
+- stable-release tag/version validation so an artifact cannot be mislabeled with a release version that does not match its checked-out source.
 
 See [`SECURITY.md`](SECURITY.md) for the trust model.
 
@@ -167,6 +178,7 @@ Do not disable SmartScreen globally. Verify the release ZIP SHA-256 published wi
 ChatGPT exports are treated as untrusted structured data. Synthetic regression/release coverage includes:
 
 - exactly one `conversations.json` entry;
+- direct JSON and ZIP input-size safety limits;
 - duplicate conversation IDs;
 - zero-length JSON;
 - malformed/truncated ZIPs;
@@ -193,7 +205,7 @@ ChatGPT exports are treated as untrusted structured data. Synthetic regression/r
 - Select visible / Clear visible / Clear all.
 - Cancellation for import, hydration, and export.
 - Memory-only Activity Log with pause/copy/clear/save/redacted-save.
-- GPT Continuation Markdown, Markdown, HTML, plain text, and Complete Conversation JSON.
+- Continuation Markdown, Markdown, HTML, plain text, and Complete Conversation JSON.
 - Single-file export for one conversation; verified ZIP bundle for multiple conversations.
 - Transactional single-file finalization and staged bundle finalization.
 - Continuation structural/handoff verification.
@@ -203,7 +215,7 @@ ChatGPT exports are treated as untrusted structured data. Synthetic regression/r
 - One-pass multi-conversation Complete JSON extraction.
 - Per-Monitor V2 dark WPF interface.
 - Native About dialog and accessibility metadata for primary controls.
-- Operation-boundary memory cleanup telemetry.
+- Operation-boundary memory cleanup telemetry used only inside the local Activity Log.
 
 ## Validation policy
 
@@ -219,18 +231,26 @@ A developer-only utility can compare a current export against `[INDEX]` entries 
 dotnet run --project tools/GPTConversationSplitter.ParityAudit -- <export.zip> <reference-activity-log.txt>
 ```
 
-## License
+Internal C# project/namespace identifiers retain the historical `GPTConversationSplitter` name to avoid a high-risk, nonfunctional source rewrite. They are implementation identifiers, not the public product identity.
 
-GPT Conversation Splitter is **source-available software**, not open-source software. Official compiled releases may be downloaded and used for lawful personal, educational, professional, and internal business purposes. The source code is publicly available for transparency, inspection, security review, education, reference, and private evaluation, but redistribution, resale, and distribution of modified or derivative builds are not permitted without prior written permission from DevMoarRamz.
+## License and third-party components
 
-See [`LICENSE.txt`](LICENSE.txt) for the complete terms.
+LLM Continuity Toolkit is **source-available software**, not open-source software. Official compiled releases may be downloaded and used for lawful personal, educational, professional, and internal business purposes. The source code is publicly available for transparency, inspection, security review, education, reference, and private evaluation, but redistribution, resale, and distribution of modified or derivative builds are not permitted without prior written permission from DevMoarRamz.
+
+See [`LICENSE.txt`](LICENSE.txt) for the complete project terms. Microsoft/.NET/WPF runtime components remain governed by their respective Microsoft and third-party terms; see [`MICROSOFT-RUNTIME-NOTICES.txt`](MICROSOFT-RUNTIME-NOTICES.txt) and the authoritative notice files included with official portable releases.
+
+## Independence and trademarks
+
+LLM Continuity Toolkit is an independent project and is not affiliated with, sponsored by, or endorsed by OpenAI.
+
+ChatGPT and GPT are trademarks of OpenAI. References to ChatGPT describe the currently supported export source and interoperability target; they are not part of the LLM Continuity Toolkit product name.
 
 ## Repository workflow
 
-`main` is the stable release line:
+`main` is the stable public source line:
 
 ```text
-engineering branch
+release / maintenance branch
         ↓
 regression + hostile-input + security + runtime gates
         ↓
@@ -240,9 +260,11 @@ review
         ↓
 merge to main
         ↓
-rebuild release artifacts from stable main
+create immutable version tag from approved main commit
         ↓
-tag / release checkpoint
+release workflow validates tag ↔ source version
+        ↓
+build and verify final release package from that tag
 ```
 
-Release ZIP and deployed-file hashes are generated from the final stable `main` build rather than copied from an earlier release-candidate artifact.
+Release ZIP and deployed-file hashes are generated from the immutable tagged release source rather than copied from an earlier pull-request artifact.
