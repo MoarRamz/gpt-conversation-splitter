@@ -95,7 +95,7 @@ public sealed class ContinuationWriter
 
         var metadataJson = JsonSerializer.Serialize(metadata, new JsonSerializerOptions { WriteIndented = true });
 
-        await writer.WriteLineAsync("# LLM Conversation Continuation").ConfigureAwait(false);
+        await writer.WriteLineAsync("# ChatGPT Conversation Continuation").ConfigureAwait(false);
         await writer.WriteLineAsync().ConfigureAwait(false);
         await writer.WriteLineAsync("> **Purpose:** This file preserves a prior ChatGPT conversation so a new ChatGPT conversation can continue from the same context.").ConfigureAwait(false);
         await writer.WriteLineAsync().ConfigureAwait(false);
@@ -150,7 +150,7 @@ public sealed class ContinuationWriter
             cancellationToken.ThrowIfCancellationRequested();
             var label = message.Role == "user" ? "User" : "Assistant";
             var turnId = message.Turn.ToString("D4", System.Globalization.CultureInfo.InvariantCulture);
-            await writer.WriteLineAsync($"<!-- LLM_CONTINUITY_TURN {turnId} role={message.Role} -->").ConfigureAwait(false);
+            await writer.WriteLineAsync($"<!-- GPT_SPLITTER_TURN {turnId} role={message.Role} -->").ConfigureAwait(false);
             await writer.WriteLineAsync($"## {label} — Turn {message.Turn}").ConfigureAwait(false);
             var stamp = TimestampUtil.FormatLocal(message.CreateTime);
             if (stamp != "Unknown")
@@ -161,7 +161,7 @@ public sealed class ContinuationWriter
             await writer.WriteLineAsync().ConfigureAwait(false);
             await writer.WriteLineAsync(message.Text).ConfigureAwait(false);
             await writer.WriteLineAsync().ConfigureAwait(false);
-            await writer.WriteLineAsync($"<!-- END_LLM_CONTINUITY_TURN {turnId} -->").ConfigureAwait(false);
+            await writer.WriteLineAsync($"<!-- END_GPT_SPLITTER_TURN {turnId} -->").ConfigureAwait(false);
             await writer.WriteLineAsync().ConfigureAwait(false);
             await writer.WriteLineAsync("---").ConfigureAwait(false);
             await writer.WriteLineAsync().ConfigureAwait(false);
@@ -175,11 +175,11 @@ public sealed class ContinuationWriter
 
 public sealed partial class ContinuationVerifier
 {
-    [GeneratedRegex(@"^<!-- LLM_CONTINUITY_TURN (\d+) role=(user|assistant) -->$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^<!-- GPT_SPLITTER_TURN (\d+) role=(user|assistant) -->$", RegexOptions.CultureInvariant)]
     private static partial Regex StartRegex();
     [GeneratedRegex(@"^## (User|Assistant) — Turn (\d+)$", RegexOptions.CultureInvariant)]
     private static partial Regex HeadingRegex();
-    [GeneratedRegex(@"^<!-- END_LLM_CONTINUITY_TURN (\d+) -->$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex(@"^<!-- END_GPT_SPLITTER_TURN (\d+) -->$", RegexOptions.CultureInvariant)]
     private static partial Regex EndRegex();
     [GeneratedRegex(@"^- Turn \d+ — \[(?:Uploaded image(?:: [^\]]+)?|Uploaded file: [^\]]+|Uploaded attachment reference|Audio attachment(?:: [^\]]+)?|Structured content: [^\]]+)\]$", RegexOptions.CultureInvariant)]
     private static partial Regex AttachmentRegex();
