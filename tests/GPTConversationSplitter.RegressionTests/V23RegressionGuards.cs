@@ -20,16 +20,13 @@ internal static class V23RegressionGuards
 
         var sink = new ActivitySink();
         var history = new List<ActivityEvent>();
-        sink.Activity += (_, entry) =>
-        {
-            DiagnosticRedactor.RegisterSensitiveValues(sink, entry);
-            history.Add(entry);
-        };
+        sink.Activity += (_, entry) => history.Add(entry);
 
         sink.RegisterPath(sourcePath);
         sink.RegisterPath(sourceFile);
 
         // Simulate a partially indexed import that later fails and therefore never populates UI rows.
+        // ActivitySink.Write must register sensitivity before it publishes each event.
         sink.Write("IMPORT", $"Opening ChatGPT export: {sourceFile}");
         sink.Write("INDEX", $"1  {title} — 42 visible messages");
         sink.Write("COMPAT", $"Duplicate ChatGPT conversation ID '{id}' was found. Import stopped because later lazy hydration would be ambiguous.", ActivityLevel.Error);
