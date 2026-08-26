@@ -8,6 +8,7 @@ internal static class V23RegressionGuards
     {
         RunFailedImportRedactionRegression();
         RunRenamedStagingCancellationRegression();
+        VerifyCiRuntimeLegalAssets();
     }
 
     private static void RunFailedImportRedactionRegression()
@@ -90,6 +91,27 @@ internal static class V23RegressionGuards
         {
             try { Directory.Delete(output, recursive: true); } catch { }
         }
+    }
+
+    private static void VerifyCiRuntimeLegalAssets()
+    {
+        if (!string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var dotnetRoot = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+        Require(!string.IsNullOrWhiteSpace(dotnetRoot) && Directory.Exists(dotnetRoot),
+            "GitHub Actions did not expose a usable DOTNET_ROOT for release legal-asset validation.");
+
+        var files = Directory.EnumerateFiles(dotnetRoot, "*", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileName)
+            .Where(static name => !string.IsNullOrWhiteSpace(name))
+            .ToArray();
+
+        Require(files.Any(static name => name!.Equals("LICENSE.txt", StringComparison.OrdinalIgnoreCase)),
+            $"Pinned Windows .NET installation under '{dotnetRoot}' does not expose LICENSE.txt required by stable packaging.");
+        Require(files.Any(static name => name!.Equals("ThirdPartyNotices.txt", StringComparison.OrdinalIgnoreCase)
+            || name.Equals("THIRD-PARTY-NOTICES.TXT", StringComparison.OrdinalIgnoreCase)),
+            $"Pinned Windows .NET installation under '{dotnetRoot}' does not expose ThirdPartyNotices required by stable packaging.");
     }
 
     private static ConversationRecord NewRecord(string id, string title, double created)
