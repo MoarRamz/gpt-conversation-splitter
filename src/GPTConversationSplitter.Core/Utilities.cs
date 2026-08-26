@@ -199,7 +199,11 @@ public sealed class ActivitySink
     public event EventHandler<ActivityEvent>? Activity;
 
     public void Write(string category, string message, ActivityLevel level = ActivityLevel.Info)
-        => Activity?.Invoke(this, new ActivityEvent(DateTimeOffset.Now, category, message, level));
+    {
+        var entry = new ActivityEvent(DateTimeOffset.Now, category, message, level);
+        DiagnosticRedactor.RegisterSensitiveValues(this, entry);
+        Activity?.Invoke(this, entry);
+    }
 
     public void RegisterTitle(string? value) => Register(_sensitiveTitles, value);
     public void RegisterPath(string? value) => Register(_sensitivePaths, value);
@@ -210,9 +214,9 @@ public sealed class ActivitySink
         lock (_sensitiveGate)
         {
             return new ActivitySensitiveSnapshot(
-                _sensitiveTitles.OrderByDescending(static value => value.Length).ToArray(),
-                _sensitivePaths.OrderByDescending(static value => value.Length).ToArray(),
-                _sensitiveIdentifiers.OrderByDescending(static value => value.Length).ToArray());
+                _sensitiveTitles.OrderByDescending(static value => value.Length).ThenBy(static value => value, StringComparer.Ordinal).ToArray(),
+                _sensitivePaths.OrderByDescending(static value => value.Length).ThenBy(static value => value, StringComparer.OrdinalIgnoreCase).ToArray(),
+                _sensitiveIdentifiers.OrderByDescending(static value => value.Length).ThenBy(static value => value, StringComparer.Ordinal).ToArray());
         }
     }
 
