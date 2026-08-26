@@ -33,7 +33,7 @@ public partial class MainWindow : Window
         _activity.Activity += Activity_Activity;
         _activity.Write("APP", $"{AppInfo.DisplayName} started.");
         _activity.Write("APP", $"Developed by {AppInfo.Developer}.");
-        _activity.Write("APP", "No cache, telemetry, background service, updater, or persistent activity log is enabled.");
+        _activity.Write("APP", "No cache, application telemetry, background service, updater, or persistent activity log is enabled.");
         UpdateSelectionStatus();
     }
 
@@ -52,6 +52,8 @@ public partial class MainWindow : Window
         if (dialog.ShowDialog(this) != true) return;
 
         _sourcePath = dialog.FileName;
+        _activity.RegisterPath(_sourcePath);
+        _activity.RegisterPath(Path.GetFileName(_sourcePath));
         _rows.Clear();
         _rowsView = null;
         SetBusy(true, "Analyzing export...");
@@ -69,6 +71,8 @@ public partial class MainWindow : Window
 
             foreach (var record in result.Conversations)
             {
+                _activity.RegisterTitle(record.Title);
+                _activity.RegisterIdentifier(record.Id);
                 var row = new ConversationRowViewModel(record);
                 row.PropertyChanged += Row_PropertyChanged;
                 _rows.Add(row);
@@ -117,6 +121,7 @@ public partial class MainWindow : Window
 
         var folderDialog = new OpenFolderDialog { Title = "Choose Export Folder", Multiselect = false };
         if (folderDialog.ShowDialog(this) != true) return;
+        _activity.RegisterPath(folderDialog.FolderName);
 
         if (FormatCombo.SelectedItem is not ComboBoxItem item
             || item.Tag is not string tag
@@ -160,6 +165,7 @@ public partial class MainWindow : Window
                 _sourcePath,
                 progress,
                 _operationCancellation.Token);
+            _activity.RegisterPath(result.OutputPath);
 
             StatusText.Text = result.IsBundle
                 ? $"Export complete: {selectedMetadata.Length} conversations packaged into one ZIP."
@@ -294,6 +300,7 @@ public partial class MainWindow : Window
 
     private void Activity_Activity(object? sender, ActivityEvent e)
     {
+        RegisterSensitiveValuesFromActivity(e);
         Dispatcher.BeginInvoke(() =>
         {
             _activityHistory.Add(e);
@@ -332,6 +339,7 @@ public partial class MainWindow : Window
     {
         _activityHistory.Clear();
         _activityItems.Clear();
+        RebuildRedactionRegistryForCurrentState();
     }
 
     private void SaveLog_Click(object sender, RoutedEventArgs e)
@@ -340,7 +348,7 @@ public partial class MainWindow : Window
         {
             Title = "Save Activity Log",
             Filter = "Text file (*.txt)|*.txt",
-            FileName = $"GPT_Conversation_Splitter_Activity_{DateTime.Now:yyyy-MM-dd_HHmmss}.txt"
+            FileName = $"LLM_Continuity_Toolkit_Activity_{DateTime.Now:yyyy-MM-dd_HHmmss}.txt"
         };
         if (dialog.ShowDialog(this) != true) return;
 
