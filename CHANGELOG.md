@@ -1,13 +1,42 @@
 # Changelog
 
-## Unreleased
+## 2.3.0 - 2026-08-25
 
-### Maintenance
+### Product identity and public presentation
+
+- Renamed the public product from **GPT Conversation Splitter** to **LLM Continuity Toolkit**.
+- Renamed the recommended user-facing handoff format to **Continuation Markdown** while retaining the established `GPT_SPLITTER_TURN` internal framing marker as a compatibility protocol identifier.
+- Updated Windows executable/product metadata, main UI, About dialog, export-success messaging, Activity Log names, bundle/package names, public documentation, and project license to the new identity.
+- Added an explicit independence/trademark notice: the project is not affiliated with, sponsored by, or endorsed by OpenAI; ChatGPT and GPT are referenced only for interoperability and supported-source description.
+- Internal C# project/namespace identifiers retain the historical `GPTConversationSplitter` name to avoid a high-risk nonfunctional rewrite.
+
+### Privacy and input hardening
+
+- Fixed a failed-import diagnostic edge case in **Save Redacted...** by retaining redaction candidates independently of successfully populated UI rows.
+- Redacted diagnostics now pseudonymize registered conversation titles, stable conversation identifiers, and local filesystem values even when an import partially indexed data and later failed.
+- Added direct-JSON size validation to the application lazy-import/hydration path so direct `conversations.json` input follows the same 8 GiB safety ceiling as ZIP-contained conversation data.
+- Clarified privacy wording to distinguish **no application telemetry** from operating-system/runtime crash reporting controlled by Windows.
+
+### Release and supply-chain hardening
+
+- Reworked the Stable Windows Release workflow to build only an explicitly supplied immutable `vX.Y.Z` tag and fail when the tag, checked-out commit, and `Directory.Build.props` version do not agree.
+- Removed hard-coded v2.2.1 package identity from reusable stable-release logic.
+- Updated `actions/checkout` and `actions/upload-artifact` to their current immutable v7.0.1 commit SHAs.
+- Aligned the dedicated startup-survival gate with the production managed-compressed publish configuration.
+- Rebranded PR/optimization validation artifacts and provenance while preserving the established required CI job names.
+- Hardened `.gitignore` for .NET build output, binaries, artifacts, diagnostics, new activity-log names, and both current/legacy temporary-file patterns.
+
+### Runtime redistribution notices
+
+- Added `MICROSOFT-RUNTIME-NOTICES.txt` identifying the Microsoft/.NET/WPF components shipped by the self-contained Windows build and their authoritative licensing sources.
+- Stable packaging now requires and includes the project license plus the license and third-party-notice files supplied by the pinned Windows .NET installation.
+- Documentation now distinguishes the six **runtime binaries** from additional legal/notice files carried by the official portable package.
+
+### Previous post-v2.2.1 maintenance incorporated
 
 - Corrected the public release ZIP filename used by the SmartScreen/hash-verification example in `SECURITY.md`.
 - Replaced the stale hard-coded application-version fallback with a version-neutral fallback; normal application builds continue to read the authoritative assembly version from `Directory.Build.props`.
-- Renamed pull-request and optimization validation artifacts/provenance so temporary CI packages no longer look like historical v2.2.0 RC2 release candidates.
-- No parser, transcript-reconstruction, export-format, bundle-integrity, persistence, networking, or released v2.2.1 binary behavior changes.
+- Renamed temporary PR/optimization validation artifacts so they no longer look like historical v2.2.0 RC2 release candidates.
 
 ## 2.2.1 - 2026-08-25
 
