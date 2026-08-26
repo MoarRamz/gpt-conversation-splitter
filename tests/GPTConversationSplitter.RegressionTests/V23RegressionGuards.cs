@@ -98,11 +98,36 @@ internal static class V23RegressionGuards
         if (!string.Equals(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"), "true", StringComparison.OrdinalIgnoreCase))
             return;
 
-        var dotnetRoot = Environment.GetEnvironmentVariable("DOTNET_ROOT");
-        Require(!string.IsNullOrWhiteSpace(dotnetRoot) && Directory.Exists(dotnetRoot),
-            "GitHub Actions did not expose a usable DOTNET_ROOT for release legal-asset validation.");
+        var candidateRoots = new List<string>();
+        var configuredRoot = Environment.GetEnvironmentVariable("DOTNET_ROOT");
+        if (!string.IsNullOrWhiteSpace(configuredRoot))
+            candidateRoots.Add(configuredRoot);
 
-        var files = Directory.EnumerateFiles(dotnetRoot, "*", SearchOption.TopDirectoryOnly)
+        var path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        foreach (var entry in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            try
+            {
+                if (File.Exists(Path.Combine(entry, "dotnet.exe")) || File.Exists(Path.Combine(entry, "dotnet")))
+                    candidateRoots.Add(entry);
+            }
+            catch
+            {
+                // Ignore malformed PATH entries and continue searching.
+            }
+        }
+
+        var dotnetRoot = candidateRoots
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .FirstOrDefault(root => Directory.Exists(root)
+                && Directory.EnumerateFiles(root, "*", SearchOption.TopDirectoryOnly)
+                    .Select(Path.GetFileName)
+                    .Any(static name => name?.Equals("LICENSE.txt", StringComparison.OrdinalIgnoreCase) == true));
+
+        Require(!string.IsNullOrWhiteSpace(dotnetRoot),
+            "GitHub Actions could not locate the .NET root that exposes LICENSE.txt required by stable packaging.");
+
+        var files = Directory.EnumerateFiles(dotnetRoot!, "*", SearchOption.TopDirectoryOnly)
             .Select(Path.GetFileName)
             .Where(static name => !string.IsNullOrWhiteSpace(name))
             .ToArray();
