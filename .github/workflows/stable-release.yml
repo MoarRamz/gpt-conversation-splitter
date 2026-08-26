@@ -2,10 +2,16 @@ name: Stable Windows Release
 
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Immutable release tag to build (for example v2.3.0)'
+        required: true
+        default: 'v2.3.0'
+        type: string
 
 concurrency:
-  group: stable-windows-release-${{ github.ref }}
-  cancel-in-progress: true
+  group: stable-windows-release-${{ inputs.release_tag }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -15,10 +21,35 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 25
     steps:
-      - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Checkout exact release tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Validate immutable tag and source version
+        shell: pwsh
+        run: |
+          $tag = '${{ inputs.release_tag }}'.Trim()
+          if ($tag -notmatch '^v\d+\.\d+\.\d+$') {
+            throw "Release tag must have the form vX.Y.Z; got '$tag'."
+          }
+          $version = $tag.Substring(1)
+          [xml]$props = Get-Content 'Directory.Build.props'
+          $sourceVersion = [string]$props.Project.PropertyGroup.Version
+          if ($sourceVersion -ne $version) {
+            throw "Release tag/source version mismatch: tag=$version source=$sourceVersion"
+          }
+          $head = (git rev-parse HEAD).Trim()
+          $exactTags = @(git tag --points-at HEAD)
+          if ($exactTags -notcontains $tag) {
+            throw "Checked-out commit $head is not exactly tagged '$tag'."
+          }
+          "RELEASE_TAG=$tag" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_VERSION=$version" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          "RELEASE_COMMIT=$head" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Validated immutable release source: $tag -> $head"
 
       - name: Setup pinned .NET SDK
         uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -42,7 +73,7 @@ jobs:
       - name: Run established regression suite
         run: dotnet run --project tests/GPTConversationSplitter.RegressionTests/GPTConversationSplitter.RegressionTests.csproj -c Release
 
-      - name: Run v2.2 regression suite
+      - name: Run v2.2 architecture regression suite
         run: dotnet run --project tests/GPTConversationSplitter.V22Tests/GPTConversationSplitter.V22Tests.csproj -c Release
 
       - name: Build WPF application
@@ -60,12 +91,12 @@ jobs:
         shell: pwsh
         run: Get-ChildItem artifacts/portable,artifacts/portable-repro -Recurse -Filter *.pdb | Remove-Item -Force
 
-      - name: Verify portable release layout
+      - name: Verify portable runtime layout
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts/reports | Out-Null
           $expected = @(
-            'GPT Conversation Splitter.exe',
+            'LLM Continuity Toolkit.exe',
             'D3DCompiler_47_cor3.dll',
             'PenImc_cor3.dll',
             'PresentationNative_cor3.dll',
@@ -75,10 +106,10 @@ jobs:
           $actual = @(Get-ChildItem artifacts/portable -File | Select-Object -ExpandProperty Name | Sort-Object)
           $wanted = @($expected | Sort-Object)
           if (($actual -join "`n") -ne ($wanted -join "`n")) {
-            throw "Portable deployment layout changed unexpectedly. Actual: $($actual -join ', ')"
+            throw "Portable runtime layout changed unexpectedly. Actual: $($actual -join ', ')"
           }
           @(
-            'Stable portable deployment layout'
+            'Stable portable six-runtime-binary layout'
             ($actual | ForEach-Object { $item = Get-Item (Join-Path 'artifacts/portable' $_); "$($_)  $($item.Length) bytes" })
           ) | Set-Content artifacts/reports/deployment-layout-report.txt
 
@@ -88,7 +119,7 @@ jobs:
           $a = Get-ChildItem artifacts/portable -File | Sort-Object Name
           $b = Get-ChildItem artifacts/portable-repro -File | Sort-Object Name
           if (($a.Name -join "`n") -ne ($b.Name -join "`n")) { throw 'Reproducible-build file lists differ.' }
-          $report = @('Reproducible portable build verification')
+          $report = @('Reproducible portable runtime verification')
           foreach ($file in $a) {
             $other = Join-Path 'artifacts/portable-repro' $file.Name
             $ha = (Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -101,7 +132,7 @@ jobs:
 
       - name: Audit Windows PE mitigations
         shell: pwsh
-        run: ./tools/security/Assert-PeMitigations.ps1 -Path 'artifacts/portable/GPT Conversation Splitter.exe' -ReportPath 'artifacts/reports/pe-mitigation-audit.txt'
+        run: ./tools/security/Assert-PeMitigations.ps1 -Path 'artifacts/portable/LLM Continuity Toolkit.exe' -ReportPath 'artifacts/reports/pe-mitigation-audit.txt'
 
       - name: Require surviving usable main window
         shell: pwsh
@@ -109,14 +140,14 @@ jobs:
           $process = $null
           $watch = [Diagnostics.Stopwatch]::StartNew()
           try {
-            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            $process = Start-Process -FilePath 'artifacts/portable/LLM Continuity Toolkit.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
             if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not reach an input-idle state within 5 seconds.' }
             $watch.Stop()
             Start-Sleep -Milliseconds 1500
             $process.Refresh()
             if ($process.HasExited) { throw "Application exited during startup survival window with code $($process.ExitCode)." }
             if ($process.MainWindowHandle -eq 0) { throw 'Application survived but no usable main window handle was present.' }
-            if ([string]::IsNullOrWhiteSpace($process.MainWindowTitle) -or $process.MainWindowTitle -notlike 'GPT Conversation Splitter*') {
+            if ([string]::IsNullOrWhiteSpace($process.MainWindowTitle) -or $process.MainWindowTitle -notlike 'LLM Continuity Toolkit*') {
               throw "Unexpected or missing main window title: '$($process.MainWindowTitle)'."
             }
             ('Stable startup to input-idle: {0:N0} ms' -f $watch.Elapsed.TotalMilliseconds) | Set-Content artifacts/reports/startup-performance.txt
@@ -130,7 +161,7 @@ jobs:
         run: |
           $process = $null
           try {
-            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            $process = Start-Process -FilePath 'artifacts/portable/LLM Continuity Toolkit.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
             if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not become input-idle for network audit.' }
             Start-Sleep -Milliseconds 500
             $tcp = @(Get-NetTCPConnection -OwningProcess $process.Id -ErrorAction SilentlyContinue)
@@ -149,7 +180,7 @@ jobs:
       - name: Audit portable zero-residue user roots
         shell: pwsh
         run: |
-          $root = Join-Path $env:RUNNER_TEMP 'gpt-splitter-stable-residue-audit'
+          $root = Join-Path $env:RUNNER_TEMP 'llm-continuity-stable-residue-audit'
           Remove-Item $root -Recurse -Force -ErrorAction SilentlyContinue
           $tempRoot = Join-Path $root 'Temp'
           $appDataRoot = Join-Path $root 'AppData'
@@ -160,22 +191,18 @@ jobs:
           $process = $null
           try {
             $env:TEMP=$tempRoot; $env:TMP=$tempRoot; $env:APPDATA=$appDataRoot; $env:LOCALAPPDATA=$localRoot; $env:DOTNET_BUNDLE_EXTRACT_BASE_DIR=$bundleRoot
-            $process = Start-Process -FilePath 'artifacts/portable/GPT Conversation Splitter.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
+            $process = Start-Process -FilePath 'artifacts/portable/LLM Continuity Toolkit.exe' -WorkingDirectory (Resolve-Path 'artifacts/portable') -PassThru
             if (-not $process.WaitForInputIdle(5000)) { throw 'Application did not become input-idle for residue audit.' }
             Start-Sleep -Milliseconds 750
             if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force }
             Start-Sleep -Milliseconds 400
-            $tempCount = @(Get-ChildItem $tempRoot -Recurse -File -ErrorAction SilentlyContinue).Count
-            $appDataCount = @(Get-ChildItem $appDataRoot -Recurse -File -ErrorAction SilentlyContinue).Count
-            $localCount = @(Get-ChildItem $localRoot -Recurse -File -ErrorAction SilentlyContinue).Count
-            $bundleCount = @(Get-ChildItem $bundleRoot -Recurse -File -ErrorAction SilentlyContinue).Count
             $files = @(Get-ChildItem $root -Recurse -File -ErrorAction SilentlyContinue)
             @(
               'Stable portable controlled user-root residue audit'
-              "TEMP/TMP files after exit: $tempCount"
-              "APPDATA files after exit: $appDataCount"
-              "LOCALAPPDATA files after exit: $localCount"
-              "Bundle extraction files after exit: $bundleCount"
+              "TEMP/TMP files after exit: $(@(Get-ChildItem $tempRoot -Recurse -File -ErrorAction SilentlyContinue).Count)"
+              "APPDATA files after exit: $(@(Get-ChildItem $appDataRoot -Recurse -File -ErrorAction SilentlyContinue).Count)"
+              "LOCALAPPDATA files after exit: $(@(Get-ChildItem $localRoot -Recurse -File -ErrorAction SilentlyContinue).Count)"
+              "Bundle extraction files after exit: $(@(Get-ChildItem $bundleRoot -Recurse -File -ErrorAction SilentlyContinue).Count)"
               "Total controlled-root files after exit: $($files.Count)"
             ) | Set-Content artifacts/reports/portable-residue-audit.txt
             if ($files.Count -ne 0) { throw 'Portable application left files in controlled Windows user-data roots.' }
@@ -186,17 +213,38 @@ jobs:
             Remove-Item $root -Recurse -Force -ErrorAction SilentlyContinue
           }
 
-      - name: Stage stable portable folder
+      - name: Stage stable portable package
         shell: pwsh
         run: |
-          $release = 'artifacts/release/GPT Conversation Splitter'
+          $release = 'artifacts/release/LLM Continuity Toolkit'
           New-Item -ItemType Directory -Force $release | Out-Null
           Copy-Item artifacts/portable/* $release -Force
+          Copy-Item LICENSE.txt (Join-Path $release 'LLM-CONTINUITY-TOOLKIT-LICENSE.txt') -Force
+          Copy-Item MICROSOFT-RUNTIME-NOTICES.txt (Join-Path $release 'MICROSOFT-RUNTIME-NOTICES.txt') -Force
 
-      - name: Generate deployed-file SHA256SUMS
+          $dotnetRoot = Split-Path -Parent (Get-Command dotnet).Source
+          $dotnetLicense = Get-ChildItem $dotnetRoot -File | Where-Object { $_.Name -ieq 'LICENSE.txt' } | Select-Object -First 1
+          $dotnetNotices = Get-ChildItem $dotnetRoot -File | Where-Object { $_.Name -ieq 'ThirdPartyNotices.txt' -or $_.Name -ieq 'THIRD-PARTY-NOTICES.TXT' } | Select-Object -First 1
+          if (-not $dotnetLicense) { throw "Pinned Windows .NET installation did not expose its root LICENSE.txt under $dotnetRoot." }
+          if (-not $dotnetNotices) { throw "Pinned Windows .NET installation did not expose its root ThirdPartyNotices file under $dotnetRoot." }
+          Copy-Item $dotnetLicense.FullName (Join-Path $release 'DOTNET-LICENSE.txt') -Force
+          Copy-Item $dotnetNotices.FullName (Join-Path $release 'DOTNET-THIRD-PARTY-NOTICES.txt') -Force
+
+          $legalExpected = @(
+            'LLM-CONTINUITY-TOOLKIT-LICENSE.txt',
+            'MICROSOFT-RUNTIME-NOTICES.txt',
+            'DOTNET-LICENSE.txt',
+            'DOTNET-THIRD-PARTY-NOTICES.txt'
+          )
+          foreach ($name in $legalExpected) {
+            $path = Join-Path $release $name
+            if (-not (Test-Path $path) -or (Get-Item $path).Length -le 0) { throw "Required legal notice missing or empty: $name" }
+          }
+
+      - name: Generate packaged-file SHA256SUMS
         shell: pwsh
         run: |
-          $release = 'artifacts/release/GPT Conversation Splitter'
+          $release = 'artifacts/release/LLM Continuity Toolkit'
           Get-ChildItem $release -File | Sort-Object Name | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $($_.Name)"
@@ -207,43 +255,48 @@ jobs:
         run: |
           $sdk=(dotnet --version).Trim()
           @(
-            'GPT Conversation Splitter v2.2.1 stable build provenance'
-            "Commit: $env:GITHUB_SHA"
-            "Branch/ref: $env:GITHUB_REF"
+            "LLM Continuity Toolkit v$env:RELEASE_VERSION stable build provenance"
+            "Tag: $env:RELEASE_TAG"
+            "Commit: $env:RELEASE_COMMIT"
             'Runtime: win-x64'
             'Configuration: Release'
             'Portable managed compression: enabled'
             ".NET SDK: $sdk"
+            'Tag/source version parity: PASS'
             'Offline architecture guard: PASS'
             'Established regressions: PASS'
-            'v2.2 regressions: PASS'
-            'Portable six-file layout: PASS'
+            'v2.2 architecture regressions: PASS'
+            'Portable six-runtime-binary layout: PASS'
             'Reproducible portable binaries: PASS'
             'ASLR/DEP/HIGH_ENTROPY_VA: PASS'
             'Startup survival: PASS'
             'Runtime network endpoints: 0 TCP / 0 UDP'
             'Controlled TEMP/APPDATA/LOCALAPPDATA residue: 0 files'
             'Bundle extraction residue: 0 files'
+            'Project + Microsoft/.NET legal notices packaged: PASS'
             ''
-            'Deployed-file SHA-256:'
+            'Packaged-file SHA-256:'
             (Get-Content artifacts/reports/SHA256SUMS.txt)
           ) | Set-Content artifacts/reports/BUILD_PROVENANCE.txt
 
-      - name: Package Windows v2.2.1 stable
+      - name: Package stable Windows release
         shell: pwsh
-        run: Compress-Archive -Path 'artifacts/release/GPT Conversation Splitter' -DestinationPath artifacts/GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip -CompressionLevel Optimal
+        run: |
+          $zip = "artifacts/LLM_Continuity_Toolkit_v$env:RELEASE_VERSION`_Windows_Portable.zip"
+          Compress-Archive -Path 'artifacts/release/LLM Continuity Toolkit' -DestinationPath $zip -CompressionLevel Optimal
+          "RELEASE_ZIP=$zip" | Out-File $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: SHA-256 stable package report
         shell: pwsh
         run: |
-          $hash = Get-FileHash artifacts/GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip -Algorithm SHA256
-          "$($hash.Hash.ToLowerInvariant())  GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
+          $hash = Get-FileHash $env:RELEASE_ZIP -Algorithm SHA256
+          "$($hash.Hash.ToLowerInvariant())  $(Split-Path $env:RELEASE_ZIP -Leaf)" | Set-Content artifacts/reports/PACKAGE_SHA256.txt
           Get-Content artifacts/reports/PACKAGE_SHA256.txt
 
-      - name: Upload Windows v2.2.1 stable artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Upload stable Windows artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: GPT-Conversation-Splitter-v2.2.1-Stable
-          path: artifacts/GPT_Conversation_Splitter_v2.2.1_Windows_Portable_NoResidue.zip
+          name: LLM-Continuity-Toolkit-${{ inputs.release_tag }}-Stable
+          path: ${{ env.RELEASE_ZIP }}
           if-no-files-found: error
           compression-level: 0
